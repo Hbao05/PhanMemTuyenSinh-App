@@ -1,0 +1,23 @@
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+        <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/xettuyen2026?serverTimezone=UTC</property>
+        <property name="hibernate.connection.username">root</property> <property name="hibernate.connection.password">121105</property> <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+
+        <mapping class="entity.ThiSinh" />
+        <mapping class="entity.Nganh" />
+        <mapping class="entity.DiemThiXetTuyen" />
+        <mapping class="entity.DiemCongXetTuyen" />
+        <mapping class="entity.NguyenVongXetTuyen" />
+        <mapping class="entity.NganhToHop" />
+        <mapping class="entity.BangQuyDoi" />
+        <mapping class="entity.ToHopMonThi" />
+
+    </session-factory>
+</hibernate-configuration>
