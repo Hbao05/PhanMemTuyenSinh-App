@@ -2,6 +2,9 @@ package gui;
 
 import bus.ThiSinhBUS;
 import entity.ThiSinh;
+import gui.style.UIConstants;
+import gui.component.CustomButton;
+import gui.component.CustomTable;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -11,77 +14,84 @@ import java.util.List;
 public class QuanLyThiSinhGUI extends JPanel {
     private final ThiSinhBUS candidateBUS;
 
-    // UI Components
+    // Khai báo các thành phần giao diện
     private JTextField txtSearch;
-    private JButton btnSearch;
-    private JButton btnImport;
-    private JTable tblCandidates;
+    private CustomButton btnSearch, btnImport, btnPrev, btnNext, btnEdit;
+    private CustomTable tblCandidates;
     private DefaultTableModel tableModel;
-    private JButton btnPrev, btnNext, btnEdit;
     private JLabel lblPageInfo;
 
-    // Pagination & Search States
+    // Biến lưu trạng thái phân trang
     private int currentPage = 1;
     private int totalPages = 1;
     private String currentKeyword = "";
 
     public QuanLyThiSinhGUI() {
         this.candidateBUS = new ThiSinhBUS();
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(15, 15));
+        setBackground(UIConstants.BACKGROUND_COLOR);
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         initComponents();
         setupEventHandlers();
-        loadDataToTable(); // Load data when panel is created
+        loadDataToTable(); // Tải dữ liệu lần đầu
     }
 
     private void initComponents() {
-        // ================= 1. TOP PANEL: Search & Import =================
+        // === 1. KHU VỰC TRÊN CÙNG: Tìm kiếm & Import ===
         JPanel pnlTop = new JPanel(new BorderLayout());
+        pnlTop.setOpaque(false); // Xóa nền để lấy màu của nền gốc
 
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pnlSearch.add(new JLabel("Search (CCCD / Name):"));
+        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlSearch.setOpaque(false);
+        JLabel lblSearch = new JLabel("Tìm kiếm (CCCD/Tên):");
+        lblSearch.setFont(UIConstants.FONT_NORMAL);
         txtSearch = new JTextField(25);
-        btnSearch = new JButton("Search");
+        txtSearch.setFont(UIConstants.FONT_NORMAL);
+        txtSearch.setPreferredSize(new Dimension(250, 35));
+
+        btnSearch = new CustomButton("Tìm kiếm", UIConstants.PRIMARY_COLOR);
+        pnlSearch.add(lblSearch);
         pnlSearch.add(txtSearch);
         pnlSearch.add(btnSearch);
 
-        JPanel pnlAction = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnImport = new JButton("Import from Excel");
+        JPanel pnlAction = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        pnlAction.setOpaque(false);
+        btnImport = new CustomButton("Import Excel", UIConstants.SUCCESS_COLOR);
         pnlAction.add(btnImport);
 
         pnlTop.add(pnlSearch, BorderLayout.WEST);
         pnlTop.add(pnlAction, BorderLayout.EAST);
         add(pnlTop, BorderLayout.NORTH);
 
-        // ================= 2. CENTER PANEL: Data Table =================
-        String[] columns = {"ID", "CCCD", "Last Name (Họ)", "First Name (Tên)", "DOB", "Phone", "Gender"};
+        // === 2. KHU VỰC GIỮA: Bảng dữ liệu ===
+        String[] columns = {"ID", "CCCD", "Họ", "Tên", "Ngày Sinh", "Giới Tính", "Khu Vực"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; // Prevent direct editing on the table
-            }
+            public boolean isCellEditable(int row, int column) { return false; }
         };
-        tblCandidates = new JTable(tableModel);
-        tblCandidates.setRowHeight(25);
-        tblCandidates.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
-
+        tblCandidates = new CustomTable(tableModel);
         add(new JScrollPane(tblCandidates), BorderLayout.CENTER);
 
-        // ================= 3. BOTTOM PANEL: Pagination & Edit =================
+        // === 3. KHU VỰC DƯỚI CÙNG: Phân trang & Sửa ===
         JPanel pnlBottom = new JPanel(new BorderLayout());
+        pnlBottom.setOpaque(false);
 
-        JPanel pnlPagination = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        btnPrev = new JButton("<< Prev");
-        lblPageInfo = new JLabel("Page 1 / 1");
-        btnNext = new JButton("Next >>");
+        JPanel pnlPagination = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        pnlPagination.setOpaque(false);
+        btnPrev = new CustomButton("<< Trước", UIConstants.PRIMARY_COLOR);
+        lblPageInfo = new JLabel("Trang 1 / 1");
+        lblPageInfo.setFont(UIConstants.FONT_BOLD);
+        btnNext = new CustomButton("Sau >>", UIConstants.PRIMARY_COLOR);
 
         pnlPagination.add(btnPrev);
         pnlPagination.add(lblPageInfo);
         pnlPagination.add(btnNext);
 
-        JPanel pnlEdit = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnEdit = new JButton("Edit Selected Candidate");
+        JPanel pnlEdit = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        pnlEdit.setOpaque(false);
+        btnEdit = new CustomButton("Sửa Thí Sinh", UIConstants.PRIMARY_COLOR);
+        pnlEdit.setPreferredSize(new Dimension(150, 35)); // Nút này chữ dài nên cho to ra tí
         pnlEdit.add(btnEdit);
 
         pnlBottom.add(pnlPagination, BorderLayout.CENTER);
@@ -90,14 +100,14 @@ public class QuanLyThiSinhGUI extends JPanel {
     }
 
     private void setupEventHandlers() {
-        // Handle Search
+        // Sự kiện: Tìm kiếm
         btnSearch.addActionListener(e -> {
             currentKeyword = txtSearch.getText().trim();
-            currentPage = 1; // Reset to first page on new search
+            currentPage = 1;
             loadDataToTable();
         });
 
-        // Handle Previous Page
+        // Sự kiện: Phân trang (Trang trước)
         btnPrev.addActionListener(e -> {
             if (currentPage > 1) {
                 currentPage--;
@@ -105,7 +115,7 @@ public class QuanLyThiSinhGUI extends JPanel {
             }
         });
 
-        // Handle Next Page
+        // Sự kiện: Phân trang (Trang sau)
         btnNext.addActionListener(e -> {
             if (currentPage < totalPages) {
                 currentPage++;
@@ -113,46 +123,37 @@ public class QuanLyThiSinhGUI extends JPanel {
             }
         });
 
-        // Handle Edit Button
+        // Sự kiện: Sửa thông tin
         btnEdit.addActionListener(e -> {
             int selectedRow = tblCandidates.getSelectedRow();
             if (selectedRow < 0) {
-                JOptionPane.showMessageDialog(this, "Please select a candidate from the table to edit.", "Warning", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn một thí sinh trong bảng để sửa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
-            // Extract basic data from the selected row (using ID or CCCD to fetch full object if needed)
-            int id = (int) tblCandidates.getValueAt(selectedRow, 0);
+            // Lấy ID thí sinh từ cột 0
+            int idTs = (int) tblCandidates.getValueAt(selectedRow, 0);
             String cccd = (String) tblCandidates.getValueAt(selectedRow, 1);
-            String ho = (String) tblCandidates.getValueAt(selectedRow, 2);
-            String ten = (String) tblCandidates.getValueAt(selectedRow, 3);
 
-            // Note: In a real app, you would open an EditDialog here and pass the ID or Candidate object
-            // Example:
-            // UpdateCandidateDialog dialog = new UpdateCandidateDialog(SwingUtilities.getWindowAncestor(this), id, candidateBUS);
-            // dialog.setVisible(true);
-            // if(dialog.isUpdated()) { loadDataToTable(); }
-
-            JOptionPane.showMessageDialog(this, "Edit dialog will open for Candidate: " + ho + " " + ten + " (CCCD: " + cccd + ")", "Edit Action", JOptionPane.INFORMATION_MESSAGE);
+            // TODO: Mở hộp thoại sửa (Chúng ta sẽ làm Form sửa sau)
+            JOptionPane.showMessageDialog(this, "Chức năng mở hộp thoại sửa cho thí sinh có CCCD: " + cccd, "Sửa", JOptionPane.INFORMATION_MESSAGE);
         });
 
-        // Handle Import Button
+        // Sự kiện: Import
         btnImport.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             int result = fileChooser.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
-                // Future integration: Pass the selected file to ExcelUtil, get List<ThiSinh>, then call candidateBUS.importCandidates(list)
-                JOptionPane.showMessageDialog(this, "Selected file: " + fileChooser.getSelectedFile().getName() + "\n(Excel reading logic will be implemented here)", "Import Action", JOptionPane.INFORMATION_MESSAGE);
+                // TODO: Gọi thư viện đọc Excel ở đây
+                JOptionPane.showMessageDialog(this, "Đã chọn file: " + fileChooser.getSelectedFile().getName(), "Import", JOptionPane.INFORMATION_MESSAGE);
             }
         });
     }
 
-    // ================= CORE DATA LOADING METHOD =================
+    // Hàm gọi BUS để nạp dữ liệu lên bảng
     private void loadDataToTable() {
-        tableModel.setRowCount(0); // Clear existing rows
+        tableModel.setRowCount(0);
         List<ThiSinh> list;
 
-        // Routing logic: Search vs Normal Listing
         if (currentKeyword.isEmpty()) {
             list = candidateBUS.getList(currentPage);
             totalPages = candidateBUS.calculateTotalPages();
@@ -161,38 +162,25 @@ public class QuanLyThiSinhGUI extends JPanel {
             totalPages = candidateBUS.calculateSearchTotalPages(currentKeyword);
         }
 
-        // Update UI state
-        lblPageInfo.setText("Page " + currentPage + " / " + totalPages);
+        lblPageInfo.setText("Trang " + currentPage + " / " + totalPages);
         btnPrev.setEnabled(currentPage > 1);
         btnNext.setEnabled(currentPage < totalPages);
 
-        // Populate Table
-        if (list != null && !list.isEmpty()) {
-            for (ThiSinh candidate : list) {
-                Object[] rowData = {
-                        candidate.getIdThiSinh(),
-                        candidate.getCccd(),
-                        candidate.getHo(),
-                        candidate.getTen(),
-                        candidate.getNgaySinh(),
-                        candidate.getDienThoai(),
-                        candidate.getGioiTinh()
-                };
-                tableModel.addRow(rowData);
+        if (list != null) {
+            for (ThiSinh ts : list) {
+                tableModel.addRow(new Object[]{
+                        ts.getIdThiSinh(), ts.getCccd(), ts.getHo(), ts.getTen(),
+                        ts.getNgaySinh(), ts.getGioiTinh(), ts.getKhuVuc()
+                });
             }
         }
     }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Quản lý thí sinh");
+        JFrame f = new JFrame();
+        QuanLyThiSinhGUI test = new QuanLyThiSinhGUI();
+        f.setContentPane(new QuanLyThiSinhGUI());
+        f.setVisible(true);
 
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(900, 600);
-            frame.setLocationRelativeTo(null);
-
-            frame.setContentPane(new QuanLyThiSinhGUI());
-
-            frame.setVisible(true);
-        });
     }
 }
