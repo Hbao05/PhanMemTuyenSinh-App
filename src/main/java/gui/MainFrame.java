@@ -1,6 +1,8 @@
 package gui;
 
 import gui.style.UIConstants;
+import gui.thisinh.QuanLyThiSinhPanel;
+import gui.nganh.QuanLyNganhPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -101,10 +103,11 @@ public class MainFrame extends JFrame{
         pnlContent.add(createPlaceholder("Màn hình Quản lý Người dùng"), "USER");
 
         // 2. Chức năng Quản lý Thí sinh (Cắm đồ thật vào!)
-        pnlContent.add(new QuanLyThiSinhGUI(), "CANDIDATE");
+        pnlContent.add(new QuanLyThiSinhPanel(), "CANDIDATE");
 
         // 3 đến 9. Placeholder cho các màn hình chưa làm
-        pnlContent.add(createPlaceholder("Màn hình Quản lý Ngành"), "MAJOR");
+        // 3. Chức năng Quản lý Ngành
+        pnlContent.add(new QuanLyNganhPanel(), "MAJOR");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Tổ hợp môn"), "SUBJECT_GROUP");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Ngành - Tổ hợp"), "MAJOR_GROUP");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Điểm thi"), "SCORE");
