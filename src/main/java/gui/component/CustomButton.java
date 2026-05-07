@@ -10,6 +10,8 @@ public class CustomButton extends JButton {
         super(text);
         setFont(UIConstants.FONT_BOLD);
         setBackground(bgColor);
+        setContentAreaFilled(false); //
+        setOpaque(true);//
         setForeground(Color.WHITE);
         setFocusPainted(false); // Bỏ viền chấm chấm khi click
         setCursor(new Cursor(Cursor.HAND_CURSOR)); // Đổi con trỏ thành hình bàn tay

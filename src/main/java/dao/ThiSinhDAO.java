@@ -7,8 +7,10 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import util.HibernateUtil;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 public class ThiSinhDAO {
     public boolean insert(ThiSinh ts){
@@ -36,6 +38,15 @@ public class ThiSinhDAO {
             if(tx!=null) tx.rollback();
             e.printStackTrace();
             return false;
+        }
+    }
+    public ThiSinh getById(int id){
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Hàm get của Hibernate sẽ tìm đúng đối tượng theo ID, cực nhanh
+            return session.get(ThiSinh.class, id);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
     public List<ThiSinh> getPaginatedList(int start,int line){
@@ -96,5 +107,58 @@ public class ThiSinhDAO {
             e.printStackTrace();
             return false;
         }
+    }
+    public Set<String> getAllCccd(){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            String hql = "SELECT t.cccd FROM ThiSinh t";
+            List<String> list = session.createQuery(hql,String.class).list();
+            return new HashSet<>(list);
+        }catch (Exception e){
+            e.printStackTrace();
+            return new HashSet<>();
+        }
+    }
+
+    public boolean delete(int id) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            ThiSinh ts = session.get(ThiSinh.class, id);
+            if (ts != null) {
+                session.remove(ts);
+                tx.commit();
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int insertBatch(List<ThiSinh> candidates) {
+        Transaction tx = null;
+        int successCount = 0;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+
+            for (int i = 0; i < candidates.size(); i++) {
+                session.persist(candidates.get(i));
+                successCount++;
+
+                // Kỹ thuật Batching cốt lõi của Hibernate: Cứ 50 người thì xả bộ nhớ
+                if (i > 0 && i % 50 == 0) {
+                    session.flush(); // Đẩy lệnh INSERT xuống MySQL
+                    session.clear(); // Xóa rác trong bộ nhớ Session của Java
+                }
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            e.printStackTrace();
+            return 0; // Trả về 0 nếu toàn bộ lô bị lỗi
+        }
+        return successCount;
     }
 }
