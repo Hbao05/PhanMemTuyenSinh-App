@@ -37,3 +37,28 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Windows ###
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+desktop.ini
+
+### Logs ###
+*.log
+logs/
+
+### Environment Variables & Secrets ###
+.env
+.env.*
+application-secret.properties
+application-secret.yml
+application-local.properties
+application-local.yml
