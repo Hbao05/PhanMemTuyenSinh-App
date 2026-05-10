@@ -1,0 +1,38 @@
+1
+Dự án phần mềm tuyển sinh
+A. Chức năng Admin (win form)
+Yêu cầu: Sử dụng Swing form + Hibernate + mySQL
+1. Quản lý người dùng, có 2 loại quyền: user và admin
++ Xem danh sách, sửa thông tin, thay đổi password, đổi quyền user 
+ admin, 
+enable/disable người dùng
+2. Quản lý thí sinh
++ Import thông tin thí sinh
++ Xem danh sách (phân trang 20 row/page)
++ Tìm kiếm theo CCCD, họ tên
++ Sửa thông tin thí sinh
+3. Quản lý ngành tuyển sinh
++ Import danh sách
++ Xem danh sách, sửa thông tin, xóa, thêm mới
+2
+4. Quản lý tổ hợp môn xét tuyển
++ Import danh sách
++ Xem danh sách, sửa thông tin, xóa, thêm mới
+3
+5. Quản lý danh sách ngành - tổ hợp
+6. Quản lý điểm thí sinh: có 3 loại điểm THPT, VSAT, ĐGNL
+- Import danh sách điểm
+4
+- Xem danh sách, sửa thông tin, xóa, thêm mới
+- Thống kê điểm theo loại điểm, môn
+7. Quản lý điểm cộng
+- Xem danh sách điểm cộng
+- Import danh sách
+- Thêm, xóa, sửa
+5
+8. Quản lý nguyện vọng và xét tuyển.
+6
+9. Quản lý bảng quy đổi
+- Import danh sách
+- Xem, thêm, sửa, xóa, tìm kiếm 
+7
