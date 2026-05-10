@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="@localhost" uuid="fdfabb21-849b-48fe-bc89-251ad82f1dd9">
+    <data-source source="LOCAL" name="qlts_db" uuid="fdfabb21-849b-48fe-bc89-251ad82f1dd9">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
