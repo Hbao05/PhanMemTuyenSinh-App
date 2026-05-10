@@ -1,6 +1,7 @@
 package util;
 
 import entity.Nganh;
+import entity.NganhToHop;
 import entity.ThiSinh;
 import entity.ToHopMonThi;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -345,5 +346,128 @@ public class ExcelUtil {
     private static Double parseDoubleSafe(String s) {
         if (s == null || s.trim().isEmpty()) return null;
         try { return Double.parseDouble(s); } catch (Exception e) { return null; }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  ĐỌC FILE NGÀNH - TỔ HỢP (docs/tohopmon.xlsx)
+    // ═══════════════════════════════════════════════════════════════════
+    public static List<NganhToHop> readNganhToHopExcel(File file) {
+        List<NganhToHop> list = new ArrayList<>();
+        DataFormatter fmt = new DataFormatter();
+
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook wb = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = wb.getSheetAt(0);
+            Row firstRow = sheet.getRow(0);
+
+            if (firstRow == null || firstRow.getCell(0) == null) {
+                throw new IllegalArgumentException("File trống hoặc không có tiêu đề.");
+            }
+
+            // Kiểm tra format: Cột 0 = STT, Cột 1 = MANGANH
+            String col0 = fmt.formatCellValue(firstRow.getCell(0)).trim();
+            String col1 = fmt.formatCellValue(firstRow.getCell(1)).trim();
+            if (!col0.equalsIgnoreCase("STT") || !col1.equalsIgnoreCase("MANGANH")) {
+                throw new IllegalArgumentException(
+                    "File sai định dạng! File Ngành-Tổ hợp phải có cột STT, MANGANH.\n" +
+                    "Vui lòng chọn đúng file tohopmon.xlsx.");
+            }
+
+            // Duyệt từng dòng (bỏ qua tiêu đề)
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                // Cột 1: MANGANH
+                String maNganh = fmt.formatCellValue(row.getCell(1)).trim();
+                if (maNganh.isEmpty()) continue;
+
+                // Cột 3: MA_TO_HOP dạng "B03(TO-3,VA-3,SI-1)"
+                String maToHopRaw = fmt.formatCellValue(row.getCell(3)).trim();
+                if (maToHopRaw.isEmpty()) continue;
+
+                // Cột 4: tb_keys dạng "7140114_B03"
+                String tbKeys = fmt.formatCellValue(row.getCell(4)).trim();
+
+                // Cột 5: TEN_TO_HOP (mã tổ hợp thuần, ví dụ: B03)
+                String maToHop = fmt.formatCellValue(row.getCell(5)).trim();
+
+                // Cột 6: Gốc
+                // (không cần lưu vào entity, bỏ qua)
+
+                // Cột 7: Độ lệch
+                Double doLech = parseDoubleSafe(fmt.formatCellValue(row.getCell(7)).trim());
+
+                // Bóc tách thông tin môn học và hệ số từ MA_TO_HOP
+                NganhToHop item = new NganhToHop();
+                item.setMaNganh(maNganh);
+                item.setMaToHop(maToHop.isEmpty() ? extractMaToHop(maToHopRaw) : maToHop);
+                item.setTbKeys(tbKeys.isEmpty() ? maNganh + "_" + item.getMaToHop() : tbKeys);
+                item.setDoLech(doLech);
+
+                // Parse phần trong ngoặc: (TO-3,VA-3,SI-1)
+                parseSubjectCoefficients(maToHopRaw, item);
+
+                list.add(item);
+            }
+
+            System.out.println("readNganhToHopExcel: đọc được " + list.size() + " liên kết Ngành-Tổ hợp.");
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Lỗi đọc file Ngành-Tổ hợp: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi đọc file Excel: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
+     * Trích xuất mã tổ hợp thuần từ chuỗi dạng "B03(TO-3,VA-3,SI-1)" → "B03"
+     */
+    private static String extractMaToHop(String raw) {
+        int idx = raw.indexOf("(");
+        return idx != -1 ? raw.substring(0, idx).trim() : raw.trim();
+    }
+
+    /**
+     * Phân tích chuỗi "B03(TO-3,VA-3,SI-1)" để gán:
+     *   - thMon1/hsMon1, thMon2/hsMon2, thMon3/hsMon3
+     *   - Các cột điểm theo mã môn: to, va, si, li, ho, su, di, n1, ti, ktpl, khac
+     */
+    private static void parseSubjectCoefficients(String maToHopRaw, NganhToHop item) {
+        int openIdx = maToHopRaw.indexOf("(");
+        int closeIdx = maToHopRaw.indexOf(")");
+        if (openIdx == -1 || closeIdx == -1) return;
+
+        String inside = maToHopRaw.substring(openIdx + 1, closeIdx);
+        String[] parts = inside.split(",");
+
+        for (int p = 0; p < parts.length; p++) {
+            String[] codeAndCoeff = parts[p].trim().split("-");
+            String code = codeAndCoeff[0].trim().toUpperCase();
+            int coeff = codeAndCoeff.length > 1 ? parseIntSafe(codeAndCoeff[1].trim()) : 1;
+
+            // Gán thMon / hsMon
+            if (p == 0) { item.setThMon1(code); item.setHsMon1(coeff); }
+            else if (p == 1) { item.setThMon2(code); item.setHsMon2(coeff); }
+            else if (p == 2) { item.setThMon3(code); item.setHsMon3(coeff); }
+
+            // Gán cột điểm theo mã môn
+            switch (code) {
+                case "TO": item.setTo(coeff); break;
+                case "VA": item.setVa(coeff); break;
+                case "LI": item.setLi(coeff); break;
+                case "HO": item.setHo(coeff); break;
+                case "SI": item.setSi(coeff); break;
+                case "SU": item.setSu(coeff); break;
+                case "DI": item.setDi(coeff); break;
+                case "N1": item.setN1(coeff); break;
+                case "TI": item.setTi(coeff); break;
+                case "KTPL": item.setKtpl(coeff); break;
+                default: item.setKhac(coeff); break;
+            }
+        }
     }
 }
