@@ -3,6 +3,7 @@ package gui;
 import gui.style.UIConstants;
 import gui.thisinh.QuanLyThiSinhPanel;
 import gui.nganh.QuanLyNganhPanel;
+import gui.tohop.QuanLyToHopPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -108,7 +109,7 @@ public class MainFrame extends JFrame{
         // 3 đến 9. Placeholder cho các màn hình chưa làm
         // 3. Chức năng Quản lý Ngành
         pnlContent.add(new QuanLyNganhPanel(), "MAJOR");
-        pnlContent.add(createPlaceholder("Màn hình Quản lý Tổ hợp môn"), "SUBJECT_GROUP");
+        pnlContent.add(new QuanLyToHopPanel(), "SUBJECT_GROUP");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Ngành - Tổ hợp"), "MAJOR_GROUP");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Điểm thi"), "SCORE");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Điểm cộng"), "BONUS");

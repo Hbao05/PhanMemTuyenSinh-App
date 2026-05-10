@@ -17,9 +17,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 public class QuanLyNganhPanel extends JPanel {
@@ -31,7 +28,7 @@ public class QuanLyNganhPanel extends JPanel {
     private CustomButton    btnSearch, btnReset;
 
     // Nút chức năng
-    private CustomButton btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport, btnTemplate;
+    private CustomButton btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport;
 
     // Bảng dữ liệu
     private CustomTable       tblNganh;
@@ -124,10 +121,9 @@ public class QuanLyNganhPanel extends JPanel {
         btnDelete     = new CustomButton("🗑 Xóa",      UIConstants.DANGER_COLOR);
         btnViewDetail = new CustomButton("👁 Chi tiết", new Color(142, 68, 173));
         btnImport     = new CustomButton("⬆ Import",   new Color(22, 160, 133));
-        btnTemplate   = new CustomButton("⬇ Template", new Color(41, 128, 185));
 
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport, btnTemplate}) {
-            b.setPreferredSize(new Dimension(112, 36));
+        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
+            b.setPreferredSize(new Dimension(118, 36));
             pnlActions.add(b);
         }
 
@@ -319,9 +315,6 @@ public class QuanLyNganhPanel extends JPanel {
 
         // Import Excel
         btnImport.addActionListener(e -> doImportExcel());
-
-        // Tải template
-        btnTemplate.addActionListener(e -> downloadTemplate());
     }
 
     // ======================================================
@@ -516,35 +509,5 @@ public class QuanLyNganhPanel extends JPanel {
 
     private String flag(String val) {
         return "Y".equalsIgnoreCase(val) ? "✔ Có" : "✘ Không";
-    }
-
-    // ======================================================
-    //  9. TẢI TEMPLATE
-    // ======================================================
-    private void downloadTemplate() {
-        JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Lưu file Template Danh sách Ngành");
-        fc.setSelectedFile(new File("template_nganh.xlsx"));
-        fc.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
-
-        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File target = fc.getSelectedFile();
-            if (!target.getName().toLowerCase().endsWith(".xlsx")) {
-                target = new File(target.getAbsolutePath() + ".xlsx");
-            }
-
-            try (InputStream is = getClass().getResourceAsStream("/templates/template_nganh.xlsx")) {
-                if (is == null) {
-                    JOptionPane.showMessageDialog(this, "Không tìm thấy file mẫu trong hệ thống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                Files.copy(is, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                JOptionPane.showMessageDialog(this, "Lưu template thành công tại:\n" + target.getAbsolutePath(),
-                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Lỗi khi lưu template:\n" + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        }
     }
 }
