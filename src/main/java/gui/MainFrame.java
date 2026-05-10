@@ -4,6 +4,7 @@ import gui.style.UIConstants;
 import gui.thisinh.QuanLyThiSinhPanel;
 import gui.nganh.QuanLyNganhPanel;
 import gui.tohop.QuanLyToHopPanel;
+import gui.nganhtohop.QuanLyNganhToHopPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -110,7 +111,7 @@ public class MainFrame extends JFrame{
         // 3. Chức năng Quản lý Ngành
         pnlContent.add(new QuanLyNganhPanel(), "MAJOR");
         pnlContent.add(new QuanLyToHopPanel(), "SUBJECT_GROUP");
-        pnlContent.add(createPlaceholder("Màn hình Quản lý Ngành - Tổ hợp"), "MAJOR_GROUP");
+        pnlContent.add(new QuanLyNganhToHopPanel(), "MAJOR_GROUP");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Điểm thi"), "SCORE");
         pnlContent.add(createPlaceholder("Màn hình Quản lý Điểm cộng"), "BONUS");
         pnlContent.add(createPlaceholder("Màn hình Nguyện vọng & Xét tuyển"), "ADMISSION");
