@@ -56,5 +56,5 @@ public class Nganh {
     private Integer slVsat;
 
     @Column(name = "sl_thpt")
-    private String slThpt;
+    private Integer slThpt;
 }

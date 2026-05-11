@@ -1,0 +1,11 @@
+  Unnamed: 0 DỰ KIẾN CHỈ TIÊU TUYỂN SINH NĂM 2025          Unnamed: 2     Unnamed: 3
+0         TT                              MÃ CTĐT            TÊN CTĐT  Chỉ tiêu chốt
+1          1                              7140114    Quản lý giáo dục             40
+2          2                              7140201    Giáo dục Mầm non            200
+3          3                              7140202   Giáo dục Tiểu học            200
+4          4                              7140205  Giáo dục chính trị             10
+5          5                              7140209    Sư phạm Toán học             40
+6          6                              7140211      Sư phạm Vật lý             10
+7          7                              7140212     Sư phạm Hoá học             10
+8          8                              7140213    Sư phạm Sinh học             10
+9          9                              7140217     Sư phạm Ngữ văn             50

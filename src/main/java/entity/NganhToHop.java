@@ -43,37 +43,37 @@ public class NganhToHop {
     @Column(name = "tb_keys", unique = true)
     private String tbKeys;
 
-    @Column(name = "N1")
+    @Column(name = "`N1`")
     private Integer n1;
 
-    @Column(name = "TO")
+    @Column(name = "`TO`")
     private Integer to;
 
-    @Column(name = "LI")
+    @Column(name = "`LI`")
     private Integer li;
 
-    @Column(name = "HO")
+    @Column(name = "`HO`")
     private Integer ho;
 
-    @Column(name = "SI")
+    @Column(name = "`SI`")
     private Integer si;
 
-    @Column(name = "VA")
+    @Column(name = "`VA`")
     private Integer va;
 
-    @Column(name = "SU")
+    @Column(name = "`SU`")
     private Integer su;
 
-    @Column(name = "DI")
+    @Column(name = "`DI`")
     private Integer di;
 
-    @Column(name = "TI")
+    @Column(name = "`TI`")
     private Integer ti;
 
-    @Column(name = "KHAC")
+    @Column(name = "`KHAC`")
     private Integer khac;
 
-    @Column(name = "KTPL")
+    @Column(name = "`KTPL`")
     private Integer ktpl;
 
     @Column(name = "dolech")

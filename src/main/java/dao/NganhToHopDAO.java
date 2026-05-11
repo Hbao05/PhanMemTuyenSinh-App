@@ -1,6 +1,6 @@
 package dao;
 
-import entity.Nganh;
+import entity.NganhToHop;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -8,14 +8,13 @@ import util.HibernateUtil;
 
 import java.util.List;
 
-public class NganhDAO {
+public class NganhToHopDAO {
 
-    // ── INSERT ────────────────────────────────────────────
-    public boolean insert(Nganh nganh) {
+    public boolean insert(NganhToHop item) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            session.persist(nganh);
+            session.persist(item);
             tx.commit();
             return true;
         } catch (Exception e) {
@@ -27,12 +26,11 @@ public class NganhDAO {
         }
     }
 
-    // ── UPDATE ────────────────────────────────────────────
-    public boolean update(Nganh nganh) {
+    public boolean update(NganhToHop item) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            session.merge(nganh);
+            session.merge(item);
             tx.commit();
             return true;
         } catch (Exception e) {
@@ -44,14 +42,13 @@ public class NganhDAO {
         }
     }
 
-    // ── DELETE ────────────────────────────────────────────
     public boolean delete(int id) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            Nganh n = session.get(Nganh.class, id);
-            if (n != null) {
-                session.remove(n);
+            NganhToHop item = session.get(NganhToHop.class, id);
+            if (item != null) {
+                session.remove(item);
                 tx.commit();
                 return true;
             }
@@ -65,20 +62,19 @@ public class NganhDAO {
         }
     }
 
-    // ── GET BY ID ─────────────────────────────────────────
-    public Nganh getById(int id) {
+    public NganhToHop getById(int id) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.get(Nganh.class, id);
+            return session.get(NganhToHop.class, id);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    // ── PHÂN TRANG ────────────────────────────────────────
-    public List<Nganh> getPaginatedList(int offset, int limit) {
+    public List<NganhToHop> getPaginatedList(int offset, int limit) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Nganh> q = session.createQuery("FROM Nganh n ORDER BY n.maNganh", Nganh.class);
+            Query<NganhToHop> q = session.createQuery(
+                "FROM NganhToHop n ORDER BY n.maNganh, n.maToHop", NganhToHop.class);
             q.setFirstResult(offset);
             q.setMaxResults(limit);
             return q.list();
@@ -88,21 +84,19 @@ public class NganhDAO {
         }
     }
 
-    // ── ĐẾM TỔNG ─────────────────────────────────────────
     public long countTotal() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("SELECT count(n) FROM Nganh n", Long.class).uniqueResult();
+            return session.createQuery("SELECT count(n) FROM NganhToHop n", Long.class).uniqueResult();
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
     }
 
-    // ── TÌM KIẾM ─────────────────────────────────────────
-    public List<Nganh> search(int offset, int limit, String keyword) {
+    public List<NganhToHop> search(int offset, int limit, String keyword) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            String hql = "FROM Nganh n WHERE n.maNganh LIKE :kw OR n.tenNganh LIKE :kw ORDER BY n.maNganh";
-            Query<Nganh> q = session.createQuery(hql, Nganh.class);
+            String hql = "FROM NganhToHop n WHERE n.maNganh LIKE :kw OR n.maToHop LIKE :kw OR n.tbKeys LIKE :kw ORDER BY n.maNganh, n.maToHop";
+            Query<NganhToHop> q = session.createQuery(hql, NganhToHop.class);
             q.setParameter("kw", "%" + keyword + "%");
             q.setFirstResult(offset);
             q.setMaxResults(limit);
@@ -115,7 +109,7 @@ public class NganhDAO {
 
     public long countSearch(String keyword) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            String hql = "SELECT count(n) FROM Nganh n WHERE n.maNganh LIKE :kw OR n.tenNganh LIKE :kw";
+            String hql = "SELECT count(n) FROM NganhToHop n WHERE n.maNganh LIKE :kw OR n.maToHop LIKE :kw OR n.tbKeys LIKE :kw";
             Query<Long> q = session.createQuery(hql, Long.class);
             q.setParameter("kw", "%" + keyword + "%");
             return q.uniqueResult();
@@ -125,12 +119,11 @@ public class NganhDAO {
         }
     }
 
-    // ── KIỂM TRA MÃ NGÀNH ĐÃ TỒN TẠI ────────────────────
-    public boolean existsByMaNganh(String maNganh) {
+    public boolean existsByTbKeys(String tbKeys) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            String hql = "SELECT count(n) FROM Nganh n WHERE n.maNganh = :ma";
+            String hql = "SELECT count(n) FROM NganhToHop n WHERE n.tbKeys = :key";
             Long count = session.createQuery(hql, Long.class)
-                    .setParameter("ma", maNganh).uniqueResult();
+                    .setParameter("key", tbKeys).uniqueResult();
             return count != null && count > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -138,10 +131,9 @@ public class NganhDAO {
         }
     }
 
-    // ── LẤY TẤT CẢ (cho ComboBox) ────────────────────────
-    public List<Nganh> getAll() {
+    public List<NganhToHop> getAll() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("FROM Nganh n ORDER BY n.maNganh", Nganh.class).list();
+            return session.createQuery("FROM NganhToHop n ORDER BY n.maNganh, n.maToHop", NganhToHop.class).list();
         } catch (Exception e) {
             e.printStackTrace();
             return null;
