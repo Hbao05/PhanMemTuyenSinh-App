@@ -48,4 +48,16 @@ public class NguyenVongXetTuyen {
 
     @Column(name = "tt_thm")
     private String toHopMon;
+
+    // Quan hệ tới Nganh
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nv_manganh", referencedColumnName = "manganh",
+            insertable = false, updatable = false)
+    private Nganh nganh;
+
+    // Quan hệ tới ThiSinh
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd",
+            insertable = false, updatable = false)
+    private ThiSinh thiSinh;
 }

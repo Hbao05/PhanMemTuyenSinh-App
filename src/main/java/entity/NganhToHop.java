@@ -78,4 +78,16 @@ public class NganhToHop {
 
     @Column(name = "dolech")
     private Double doLech;
+
+    // Quan hệ tới ToHopMonThi - giải quyết trùng lặp th_mon1/2/3
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "matohop", referencedColumnName = "matohop",
+            insertable = false, updatable = false)
+    private ToHopMonThi toHopMonThi;
+
+    // Quan hệ tới Nganh
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manganh", referencedColumnName = "manganh",
+            insertable = false, updatable = false)
+    private Nganh nganh;
 }

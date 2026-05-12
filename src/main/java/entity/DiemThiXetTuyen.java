@@ -72,4 +72,10 @@ public class DiemThiXetTuyen {
 
     @Column(name = "NK2")
     private Double nk2;
+
+    // Quan hệ tới ThiSinh
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cccd", referencedColumnName = "cccd",
+            insertable = false, updatable = false)
+    private ThiSinh thiSinh;
 }
