@@ -1,9 +1,7 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
@@ -72,4 +70,11 @@ public class DiemThiXetTuyen {
 
     @Column(name = "NK2")
     private Double nk2;
+
+    // ── Quan hệ: DiemThiXetTuyen N-1 ThiSinh (theo cccd) ──
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private ThiSinh thiSinh;
 }

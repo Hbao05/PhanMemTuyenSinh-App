@@ -1,9 +1,9 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class ToHopMonThi {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ID tự động tăng
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idtohop")
     private int idToHop;
 
@@ -31,4 +31,11 @@ public class ToHopMonThi {
 
     @Column(name = "tentohop")
     private String tenToHop;
+
+    // ── Quan hệ: ToHopMonThi 1-N NganhToHop (theo matohop) ──
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "matohop", referencedColumnName = "matohop", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<NganhToHop> danhSachNganhToHop;
 }

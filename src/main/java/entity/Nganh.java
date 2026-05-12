@@ -1,11 +1,12 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+import java.util.List;
+
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -57,4 +58,14 @@ public class Nganh {
 
     @Column(name = "sl_thpt")
     private Integer slThpt;
+
+    // ── Quan hệ: Nganh 1-N NganhToHop (theo manganh) ──
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manganh", referencedColumnName = "manganh", insertable = false, updatable = false)
+    private List<NganhToHop> danhSachToHop;
+
+    // ── Quan hệ: Nganh 1-N NguyenVongXetTuyen (theo manganh) ──
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nv_manganh", referencedColumnName = "manganh", insertable = false, updatable = false)
+    private List<NguyenVongXetTuyen> danhSachNguyenVong;
 }

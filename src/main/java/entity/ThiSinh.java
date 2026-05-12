@@ -1,11 +1,10 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -51,9 +50,29 @@ public class ThiSinh {
     @Column(name = "updated_at")
     private LocalDate updatedAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "doi_tuong")
-    private String doiTuong;
+    private DoiTuong doiTuong;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "khu_vuc")
-    private String khuVuc;
+    private KhuVuc khuVuc;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private DiemThiXetTuyen diemThi;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<NguyenVongXetTuyen> danhSachNguyenVong;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ts_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<DiemCongXetTuyen> danhSachDiemCong;
 }

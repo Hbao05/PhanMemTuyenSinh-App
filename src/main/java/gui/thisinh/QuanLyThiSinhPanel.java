@@ -414,8 +414,8 @@ public class QuanLyThiSinhPanel extends JPanel {
                 {"Nơi sinh",      ts.getNoiSinh()},
                 {"Điện thoại",    ts.getDienThoai()},
                 {"Email",         ts.getEmail()},
-                {"Đối tượng UT",  ts.getDoiTuong()},
-                {"Khu vực UT",    ts.getKhuVuc()},
+                {"Đối tượng UT",  ts.getDoiTuong().getMa()},
+                {"Khu vực UT",    ts.getKhuVuc().getMa()},
                 {"Cập nhật lúc",  ts.getUpdatedAt() != null ? ts.getUpdatedAt().toString() : ""},
         };
         for (String[] r : rows) {
