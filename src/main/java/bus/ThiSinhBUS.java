@@ -5,11 +5,51 @@ import entity.ThiSinh;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class ThiSinhBUS {
     private final ThiSinhDAO thiSinhDAO;
-    private static final int ROWS_PER_PAGE = 20;
+    private static final int ROWS_PER_PAGE = 50;
+
+    /** Kết quả xử lý một (hoặc gộp nhiều) lô import thí sinh. */
+    public static final class ImportCandidateResult {
+        private int successCount;
+        private int duplicateCount;
+        private int failedToInsertCount;
+
+        public ImportCandidateResult() {
+        }
+
+        public ImportCandidateResult(int successCount, int duplicateCount, int failedToInsertCount) {
+            this.successCount = successCount;
+            this.duplicateCount = duplicateCount;
+            this.failedToInsertCount = failedToInsertCount;
+        }
+
+        public void merge(ImportCandidateResult other) {
+            if (other == null) {
+                return;
+            }
+            this.successCount += other.successCount;
+            this.duplicateCount += other.duplicateCount;
+            this.failedToInsertCount += other.failedToInsertCount;
+        }
+
+        public boolean isEmptyTotals() {
+            return successCount == 0 && duplicateCount == 0 && failedToInsertCount == 0;
+        }
+
+        public String formatMessage() {
+            if (successCount == 0 && duplicateCount > 0 && failedToInsertCount == 0) {
+                return "Import hoàn tất! \nKhông có dữ liệu mới (Tất cả " + duplicateCount
+                        + " dòng đều bị trùng CCCD hoặc lỗi).";
+            }
+            return String.format(
+                    "Import hoàn tất!\n- Thêm mới thành công: %d thí sinh.\n- Bỏ qua (Trùng CCCD/Lỗi): %d dòng.\n- Lỗi DB không thể lưu: %d dòng.",
+                    successCount, duplicateCount, failedToInsertCount);
+        }
+    }
 
     public ThiSinhBUS(){
         this.thiSinhDAO = new ThiSinhDAO();
@@ -96,51 +136,55 @@ public class ThiSinhBUS {
                 : "Error: Không thể xóa. Thí sinh có thể đã bị liên kết dữ liệu.";
     }
 
-    public String importCandidates(List<ThiSinh> importList) {
+    /** Snapshot CCCD trong DB — dùng làm cache cho import Excel nhiều lô (tránh query lặp). */
+    public Set<String> newImportCccdCache() {
+        return thiSinhDAO.getAllCccd();
+    }
+
+    /**
+     * Xử lý một lô thí sinh đọc từ Excel. Danh sách rỗng → kết quả toàn 0 (dùng khi import theo lô).
+     *
+     * @param existingCccdCache snapshot CCCD đã có (DB + các dòng đã duyệt); bị cập nhật khi có bản ghi mới hợp lệ trong lô.
+     */
+    public ImportCandidateResult importCandidatesBatch(List<ThiSinh> importList, Set<String> existingCccdCache) {
         if (importList == null || importList.isEmpty()) {
-            return "Lỗi: Danh sách import trống hoặc file Excel không có dữ liệu!";
+            return new ImportCandidateResult();
         }
+        Objects.requireNonNull(existingCccdCache, "existingCccdCache");
 
-        // 1. TẢI DỮ LIỆU CACHE: Kéo toàn bộ CCCD từ Database lên RAM (chỉ mất 1 câu truy vấn)
-        Set<String> existingCccds = thiSinhDAO.getAllCccd();
-
-        // 2. CHUẨN BỊ LÔ DỮ LIỆU SẠCH
         List<ThiSinh> validCandidates = new ArrayList<>();
         int duplicateCount = 0;
 
         for (ThiSinh candidate : importList) {
             String cccd = candidate.getCccd();
 
-            // Nếu CCCD trống thì bỏ qua ngay lập tức
             if (cccd == null || cccd.trim().isEmpty()) {
                 duplicateCount++;
                 continue;
             }
 
-            // Kiểm tra trùng lặp siêu tốc bằng HashSet.contains()
-            if (existingCccds.contains(cccd)) {
-                duplicateCount++; // Đã có trong DB -> Bỏ qua
+            if (existingCccdCache.contains(cccd)) {
+                duplicateCount++;
             } else {
-                validCandidates.add(candidate); // Hợp lệ -> Đưa vào danh sách chờ Import
-
-                // QUAN TRỌNG: Phải thêm luôn CCCD này vào HashSet
-                // Để phòng trường hợp trong chính file Excel có 2 dòng trùng CCCD với nhau!
-                existingCccds.add(cccd);
+                validCandidates.add(candidate);
+                existingCccdCache.add(cccd);
             }
         }
 
-        // 3. TIẾN HÀNH LƯU BATCH
         if (validCandidates.isEmpty()) {
-            return "Import hoàn tất! \nKhông có dữ liệu mới (Tất cả " + duplicateCount + " dòng đều bị trùng CCCD hoặc lỗi).";
+            return new ImportCandidateResult(0, duplicateCount, 0);
         }
 
-        // Gửi lô dữ liệu sạch xuống DAO để Insert
         int successCount = thiSinhDAO.insertBatch(validCandidates);
         int failedToInsertCount = validCandidates.size() - successCount;
+        return new ImportCandidateResult(successCount, duplicateCount, failedToInsertCount);
+    }
 
-        // 4. TRẢ VỀ BÁO CÁO KẾT QUẢ
-        return String.format("Import hoàn tất!\n- Thêm mới thành công: %d thí sinh.\n- Bỏ qua (Trùng CCCD/Lỗi): %d dòng.\n- Lỗi DB không thể lưu: %d dòng.",
-                successCount, duplicateCount, failedToInsertCount);
+    public String importCandidates(List<ThiSinh> importList) {
+        if (importList == null || importList.isEmpty()) {
+            return "Lỗi: Danh sách import trống hoặc file Excel không có dữ liệu!";
+        }
+        return importCandidatesBatch(importList, thiSinhDAO.getAllCccd()).formatMessage();
     }
 
 }

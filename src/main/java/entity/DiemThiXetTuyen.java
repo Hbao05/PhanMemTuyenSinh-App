@@ -72,7 +72,7 @@ public class DiemThiXetTuyen {
     private Double nk2;
 
     // ── Quan hệ: DiemThiXetTuyen N-1 ThiSinh (theo cccd) ──
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

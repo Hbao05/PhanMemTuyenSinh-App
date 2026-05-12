@@ -50,19 +50,16 @@ public class ThiSinh {
     @Column(name = "updated_at")
     private LocalDate updatedAt;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "doi_tuong")
-    private DoiTuong doiTuong;
+    private String doiTuong;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "khu_vuc")
-    private KhuVuc khuVuc;
+    private String khuVuc;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private DiemThiXetTuyen diemThi;
+    @PrePersist
+    private void prePersist() {
+        updatedAt = LocalDate.now();
+    }
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
