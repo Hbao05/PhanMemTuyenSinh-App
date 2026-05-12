@@ -1,9 +1,6 @@
 package util;
 
-import entity.Nganh;
-import entity.NganhToHop;
-import entity.ThiSinh;
-import entity.ToHopMonThi;
+import entity.*;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -34,7 +31,7 @@ public class ExcelUtil {
             int lastRowNum = sheet.getLastRowNum();
 
             // Bỏ qua dòng 0 (dòng tiêu đề STT, CCCD...), bắt đầu từ dòng 1
-            int importLimit = 200; // Giới hạn test, đổi thành lastRowNum để import toàn bộ
+            int importLimit = 10000; // Giới hạn test, đổi thành lastRowNum để import toàn bộ
             for (int i = 1; i <= Math.min(lastRowNum, importLimit); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue; // Bỏ qua dòng trống
@@ -50,8 +47,7 @@ public class ExcelUtil {
                 String gender = dataFormatter.formatCellValue(row.getCell(4)).trim();
                 String priorityObj = dataFormatter.formatCellValue(row.getCell(5)).trim();
                 String priorityZone = dataFormatter.formatCellValue(row.getCell(6)).trim();
-                String birthPlace = dataFormatter.formatCellValue(row.getCell(35)).trim(); // Cột 35 là Nơi sinh
-
+                String birthPlace = dataFormatter.formatCellValue(row.getCell(35)).trim(); // Cột 35 là Nơi sin
                 // 2. Thuật toán tách Họ và Tên
                 String ho = "";
                 String ten = "";
@@ -75,8 +71,8 @@ public class ExcelUtil {
                 ts.setTen(ten);
                 ts.setNgaySinh(dob);
                 ts.setGioiTinh(gender);
-                ts.setDoiTuong(priorityObj);
-                ts.setKhuVuc(priorityZone);
+                ts.setDoiTuong(DoiTuong.fromMa(priorityObj));
+                ts.setKhuVuc(KhuVuc.fromMa(priorityZone));
                 ts.setNoiSinh(birthPlace);
 
                 // 4. Thêm vào danh sách (RAM)

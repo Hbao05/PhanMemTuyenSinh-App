@@ -1,9 +1,7 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
@@ -75,7 +73,6 @@ public class DiemThiXetTuyen {
 
     // Quan hệ tới ThiSinh
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cccd", referencedColumnName = "cccd",
-            insertable = false, updatable = false)
+    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
     private ThiSinh thiSinh;
 }
