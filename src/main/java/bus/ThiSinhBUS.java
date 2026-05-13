@@ -10,7 +10,7 @@ import java.util.Set;
 
 public class ThiSinhBUS {
     private final ThiSinhDAO thiSinhDAO;
-    private static final int ROWS_PER_PAGE = 50;
+    private static final int ROWS_PER_PAGE = 20;
 
     /** Kết quả xử lý một (hoặc gộp nhiều) lô import thí sinh. */
     public static final class ImportCandidateResult {
