@@ -13,7 +13,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
@@ -70,7 +69,7 @@ public class QuanLyNganhPanel extends JPanel {
 
         // ---- Header bar ----
         JPanel pnlHeader = new JPanel(new BorderLayout());
-        pnlHeader.setBackground(UIConstants.TABLE_HEADER_COLOR);
+        pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
         JLabel lblTitle = new JLabel("QUẢN LÝ NGÀNH ĐÀO TẠO");
@@ -100,10 +99,10 @@ public class QuanLyNganhPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(260, 36));
         txtSearch.setToolTipText("Nhập mã ngành hoặc tên ngành");
 
-        btnSearch = new CustomButton("🔍 Tìm", UIConstants.PRIMARY_COLOR);
+        btnSearch = new CustomButton("Tim", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
-        btnReset = new CustomButton("✕ Xóa lọc", new Color(120, 120, 120));
+        btnReset = new CustomButton("Xoa loc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
         btnReset.setToolTipText("Xóa từ khóa tìm kiếm, hiển thị toàn bộ danh sách");
 
@@ -117,10 +116,10 @@ public class QuanLyNganhPanel extends JPanel {
         pnlActions.setOpaque(false);
 
         btnAdd        = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
-        btnEdit       = new CustomButton("✎ Sửa",       UIConstants.PRIMARY_COLOR);
-        btnDelete     = new CustomButton("🗑 Xóa",      UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("👁 Chi tiết", new Color(142, 68, 173));
-        btnImport     = new CustomButton("⬆ Import",   new Color(22, 160, 133));
+        btnEdit       = new CustomButton("Sua",           UIConstants.PRIMARY_COLOR);
+        btnDelete     = new CustomButton("Xoa",      UIConstants.DANGER_COLOR);
+        btnViewDetail = new CustomButton("Chi tiet", UIConstants.PURPLE_COLOR);
+        btnImport     = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
             b.setPreferredSize(new Dimension(118, 36));
@@ -170,25 +169,21 @@ public class QuanLyNganhPanel extends JPanel {
             tblNganh.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
 
-        // Căn giữa cột số & flag
-        DefaultTableCellRenderer centerRend = new DefaultTableCellRenderer();
-        centerRend.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int c : new int[]{0, 3, 4, 5, 6, 7, 8, 9}) {
-            tblNganh.getColumnModel().getColumn(c).setCellRenderer(centerRend);
+        // Căn giữa cột số
+        for (int c : new int[]{0, 3, 4, 5}) {
+            tblNganh.getColumnModel().getColumn(c).setCellRenderer(CustomTable.centerRenderer());
         }
 
-        // Renderer đặc biệt: Y → ✔ xanh, null/khác → — xám
-        DefaultTableCellRenderer flagRend = new DefaultTableCellRenderer() {
+        // Renderer đặc biệt: Y → ✔ xanh, null/khác → — xám (kết hợp zebra)
+        CustomTable.ZebraRenderer flagRend = new CustomTable.ZebraRenderer(SwingConstants.CENTER) {
             @Override
             public Component getTableCellRendererComponent(
                     JTable table, Object value, boolean isSelected,
                     boolean hasFocus, int row, int col) {
                 boolean isY = "Y".equalsIgnoreCase(String.valueOf(value));
-                Component c = super.getTableCellRendererComponent(
-                        table, isY ? "✔" : "—", isSelected, hasFocus, row, col);
-                setHorizontalAlignment(SwingConstants.CENTER);
-                setForeground(isY ? UIConstants.SUCCESS_COLOR : Color.LIGHT_GRAY);
-                return c;
+                super.getTableCellRendererComponent(table, isY ? "✔" : "—", isSelected, hasFocus, row, col);
+                if (!isSelected) setForeground(isY ? UIConstants.SUCCESS_COLOR : new Color(180, 180, 180));
+                return this;
             }
         };
         for (int c : new int[]{6, 7, 8, 9}) {

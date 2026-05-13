@@ -13,7 +13,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
@@ -57,7 +56,7 @@ public class QuanLyToHopPanel extends JPanel {
         pnlNorth.setOpaque(false);
 
         JPanel pnlHeader = new JPanel(new BorderLayout());
-        pnlHeader.setBackground(UIConstants.TABLE_HEADER_COLOR);
+        pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
         JLabel lblTitle = new JLabel("QUẢN LÝ TỔ HỢP MÔN THI");
@@ -85,10 +84,10 @@ public class QuanLyToHopPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(260, 36));
         txtSearch.setToolTipText("Nhập mã tổ hợp hoặc tên tổ hợp");
 
-        btnSearch = new CustomButton("🔍 Tìm", UIConstants.PRIMARY_COLOR);
+        btnSearch = new CustomButton("Tim", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
-        btnReset = new CustomButton("✕ Xóa lọc", new Color(120, 120, 120));
+        btnReset = new CustomButton("Xoa loc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
 
         pnlSearch.add(lblSearch);
@@ -100,9 +99,9 @@ public class QuanLyToHopPanel extends JPanel {
         pnlActions.setOpaque(false);
 
         btnAdd    = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
-        btnEdit   = new CustomButton("✎ Sửa",       UIConstants.PRIMARY_COLOR);
-        btnDelete = new CustomButton("🗑 Xóa",      UIConstants.DANGER_COLOR);
-        btnImport = new CustomButton("⬆ Import",   new Color(22, 160, 133));
+        btnEdit   = new CustomButton("Sua",           UIConstants.PRIMARY_COLOR);
+        btnDelete = new CustomButton("Xoa",      UIConstants.DANGER_COLOR);
+        btnImport = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnImport}) {
             b.setPreferredSize(new Dimension(118, 36));
@@ -145,10 +144,8 @@ public class QuanLyToHopPanel extends JPanel {
             tblToHop.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
 
-        DefaultTableCellRenderer centerRend = new DefaultTableCellRenderer();
-        centerRend.setHorizontalAlignment(SwingConstants.CENTER);
-        tblToHop.getColumnModel().getColumn(0).setCellRenderer(centerRend);
-        tblToHop.getColumnModel().getColumn(1).setCellRenderer(centerRend);
+        tblToHop.getColumnModel().getColumn(0).setCellRenderer(CustomTable.centerRenderer());
+        tblToHop.getColumnModel().getColumn(1).setCellRenderer(CustomTable.centerRenderer());
 
         JScrollPane scroll = new JScrollPane(tblToHop);
         scroll.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));

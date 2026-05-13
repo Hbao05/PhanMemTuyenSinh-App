@@ -13,7 +13,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
@@ -71,7 +70,7 @@ public class QuanLyThiSinhPanel extends JPanel {
 
         // ---- Header bar ----
         JPanel pnlHeader = new JPanel(new BorderLayout());
-        pnlHeader.setBackground(UIConstants.TABLE_HEADER_COLOR);
+        pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
         JLabel lblTitle = new JLabel("QUẢN LÝ THÍ SINH");
@@ -104,7 +103,7 @@ public class QuanLyThiSinhPanel extends JPanel {
         btnSearch = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
-        btnReset = new CustomButton("✕ Xóa lọc", new Color(120, 120, 120));
+        btnReset = new CustomButton("Xoa loc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
 
         pnlSearch.add(lblSearch);
@@ -116,11 +115,11 @@ public class QuanLyThiSinhPanel extends JPanel {
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlActions.setOpaque(false);
 
-        btnAdd        = new CustomButton("+ Thêm mới",   UIConstants.SUCCESS_COLOR);
-        btnEdit       = new CustomButton("Sửa",        UIConstants.PRIMARY_COLOR);
-        btnDelete     = new CustomButton("Xóa",       UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("Chi tiết",  new Color(142, 68, 173));
-        btnImport     = new CustomButton("Import",    new Color(22, 160, 133));
+        btnAdd        = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
+        btnEdit       = new CustomButton("Sua",         UIConstants.PRIMARY_COLOR);
+        btnDelete     = new CustomButton("Xoa",         UIConstants.DANGER_COLOR);
+        btnViewDetail = new CustomButton("Chi tiet",    UIConstants.PURPLE_COLOR);
+        btnImport     = new CustomButton("Import",      UIConstants.TEAL_COLOR);
 
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
             b.setPreferredSize(new Dimension(120, 36));
@@ -168,10 +167,8 @@ public class QuanLyThiSinhPanel extends JPanel {
             tblCandidates.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
         // Căn giữa cột ID và Giới tính, Khu vực
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         for (int col : new int[]{0, 5, 6, 7}) {
-            tblCandidates.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+            tblCandidates.getColumnModel().getColumn(col).setCellRenderer(CustomTable.centerRenderer());
         }
 
         JScrollPane scrollPane = new JScrollPane(tblCandidates);

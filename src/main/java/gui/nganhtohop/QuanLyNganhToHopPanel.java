@@ -13,7 +13,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
@@ -59,7 +58,7 @@ public class QuanLyNganhToHopPanel extends JPanel {
 
         // ── Header ──
         JPanel pnlHeader = new JPanel(new BorderLayout());
-        pnlHeader.setBackground(UIConstants.TABLE_HEADER_COLOR);
+        pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
         JLabel lblTitle = new JLabel("QUẢN LÝ NGÀNH - TỔ HỢP");
@@ -89,10 +88,10 @@ public class QuanLyNganhToHopPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(260, 36));
         txtSearch.setToolTipText("Nhập mã ngành hoặc mã tổ hợp");
 
-        btnSearch = new CustomButton("🔍 Tìm", UIConstants.PRIMARY_COLOR);
+        btnSearch = new CustomButton("Tim", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
-        btnReset = new CustomButton("✕ Xóa lọc", new Color(120, 120, 120));
+        btnReset = new CustomButton("Xoa loc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
 
         pnlSearch.add(lblSearch);
@@ -104,8 +103,8 @@ public class QuanLyNganhToHopPanel extends JPanel {
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlActions.setOpaque(false);
 
-        btnDelete = new CustomButton("🗑 Xóa",      UIConstants.DANGER_COLOR);
-        btnImport = new CustomButton("⬆ Import",   new Color(22, 160, 133));
+        btnDelete = new CustomButton("Xoa",      UIConstants.DANGER_COLOR);
+        btnImport = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
         for (CustomButton b : new CustomButton[]{btnDelete, btnImport}) {
             b.setPreferredSize(new Dimension(118, 36));
@@ -158,10 +157,8 @@ public class QuanLyNganhToHopPanel extends JPanel {
         }
 
         // Căn giữa các cột số
-        DefaultTableCellRenderer centerRend = new DefaultTableCellRenderer();
-        centerRend.setHorizontalAlignment(SwingConstants.CENTER);
         for (int i : new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) {
-            tblNganhToHop.getColumnModel().getColumn(i).setCellRenderer(centerRend);
+            tblNganhToHop.getColumnModel().getColumn(i).setCellRenderer(CustomTable.centerRenderer());
         }
 
         JScrollPane scroll = new JScrollPane(tblNganhToHop);
