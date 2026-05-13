@@ -1,9 +1,6 @@
 package util;
 
-import entity.Nganh;
-import entity.NganhToHop;
-import entity.ThiSinh;
-import entity.ToHopMonThi;
+import entity.*;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -14,8 +11,85 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ExcelUtil {
+
+    /** Số dòng dữ liệu tối đa đọc mỗi lần khi import thí sinh (bỏ qua dòng tiêu đề). */
+    public static final int CANDIDATE_IMPORT_BATCH_SIZE = 1000;
+
+    public static void forEachCandidateExcelBatch(File file, int batchSize, Consumer<List<ThiSinh>> onBatch) {
+        if (batchSize < 1) {
+            throw new IllegalArgumentException("batchSize phải >= 1");
+        }
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            int lastRowNum = sheet.getLastRowNum();
+            DataFormatter dataFormatter = new DataFormatter();
+
+            for (int start = 1; start <= lastRowNum; start += batchSize) {
+                int end = Math.min(start + batchSize - 1, lastRowNum);
+                List<ThiSinh> batch = readCandidateRows(sheet, dataFormatter, start, end);
+                onBatch.accept(batch);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi đọc file Excel thí sinh: " + e.getMessage(), e);
+        }
+    }
+
+    private static List<ThiSinh> readCandidateRows(Sheet sheet, DataFormatter dataFormatter,
+                                                   int fromRowInclusive, int toRowInclusive) {
+        List<ThiSinh> list = new ArrayList<>();
+        for (int i = fromRowInclusive; i <= toRowInclusive; i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+            ThiSinh ts = rowToThiSinh(row, dataFormatter);
+            if (ts != null) {
+                list.add(ts);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Một dòng Excel → ThiSinh, hoặc {@code null} nếu bỏ qua (không có CCCD).
+     * Thứ tự cột: cccd, sbd, họ, tên, ngày sinh, điện thoại, giới tính, email, nơi sinh, đối tượng, khu vực.
+     */
+    private static ThiSinh rowToThiSinh(Row row, DataFormatter dataFormatter) {
+        String cccd = dataFormatter.formatCellValue(row.getCell(0)).trim();
+        if (cccd.isEmpty()) {
+            return null;
+        }
+        String soBaoDanh = dataFormatter.formatCellValue(row.getCell(1)).trim();
+        String ho = dataFormatter.formatCellValue(row.getCell(2)).trim();
+        String ten = dataFormatter.formatCellValue(row.getCell(3)).trim();
+        String dob = dataFormatter.formatCellValue(row.getCell(4)).trim();
+        String phone = dataFormatter.formatCellValue(row.getCell(5)).trim();
+        String gender = dataFormatter.formatCellValue(row.getCell(6)).trim();
+        String email = dataFormatter.formatCellValue(row.getCell(7)).trim();
+        String birthPlace = dataFormatter.formatCellValue(row.getCell(8)).trim();
+        String priorityObj = dataFormatter.formatCellValue(row.getCell(9)).trim();
+        String priorityZone = dataFormatter.formatCellValue(row.getCell(10)).trim();
+
+        ThiSinh ts = new ThiSinh();
+        ts.setCccd(cccd);
+        ts.setSoBaoDanh(soBaoDanh);
+        ts.setHo(ho);
+        ts.setTen(ten);
+        ts.setNgaySinh(dob);
+        ts.setDienThoai(phone);
+        ts.setGioiTinh(gender);
+        ts.setEmail(email);
+        ts.setDoiTuong(priorityObj);
+        ts.setKhuVuc(priorityZone);
+        ts.setNoiSinh(birthPlace);
+        return ts;
+    }
+
     /**
      * Hàm đọc file Excel Thí sinh và chỉ lấy các cột thông tin lý lịch cần thiết.
      * @param file File Excel người dùng chọn từ giao diện
@@ -23,68 +97,16 @@ public class ExcelUtil {
      */
     public static List<ThiSinh> readCandidateExcel(File file) {
         List<ThiSinh> candidateList = new ArrayList<>();
-        // DataFormatter giúp đọc mọi kiểu dữ liệu trong Excel (số, ngày, chữ) thành String chuẩn
         DataFormatter dataFormatter = new DataFormatter();
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = new XSSFWorkbook(fis)) {
 
-            // Lấy Sheet đầu tiên (Sheet 0)
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
-
-            // Bỏ qua dòng 0 (dòng tiêu đề STT, CCCD...), bắt đầu từ dòng 1
-            int importLimit = 200; // Giới hạn test, đổi thành lastRowNum để import toàn bộ
-            for (int i = 1; i <= Math.min(lastRowNum, importLimit); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue; // Bỏ qua dòng trống
-
-                // 1. Đọc dữ liệu thô từ các cột (Chỉ lấy đúng 7 cột đầu và cột Nơi sinh)
-                String cccd = dataFormatter.formatCellValue(row.getCell(1)).trim();
-                String fullName = dataFormatter.formatCellValue(row.getCell(2)).trim();
-
-                // Nếu không có CCCD thì coi như dòng đó rác, bỏ qua luôn để tiết kiệm bộ nhớ
-                if (cccd.isEmpty()) continue;
-
-                String dob = dataFormatter.formatCellValue(row.getCell(3)).trim();
-                String gender = dataFormatter.formatCellValue(row.getCell(4)).trim();
-                String priorityObj = dataFormatter.formatCellValue(row.getCell(5)).trim();
-                String priorityZone = dataFormatter.formatCellValue(row.getCell(6)).trim();
-                String birthPlace = dataFormatter.formatCellValue(row.getCell(35)).trim(); // Cột 35 là Nơi sinh
-
-                // 2. Thuật toán tách Họ và Tên
-                String ho = "";
-                String ten = "";
-                if (!fullName.isEmpty()) {
-                    int lastSpaceIndex = fullName.lastIndexOf(" ");
-                    if (lastSpaceIndex == -1) {
-                        // Trường hợp dữ liệu test như "TS_0001" (Không có dấu cách)
-                        ten = fullName;
-                    } else {
-                        // Cắt từ đầu đến khoảng trắng cuối cùng làm Họ
-                        ho = fullName.substring(0, lastSpaceIndex).trim();
-                        // Cắt từ sau khoảng trắng cuối cùng đến hết làm Tên
-                        ten = fullName.substring(lastSpaceIndex + 1).trim();
-                    }
-                }
-
-                // 3. Đóng gói vào đối tượng ThiSinh
-                ThiSinh ts = new ThiSinh();
-                ts.setCccd(cccd);
-                ts.setHo(ho);
-                ts.setTen(ten);
-                ts.setNgaySinh(dob);
-                ts.setGioiTinh(gender);
-                ts.setDoiTuong(priorityObj);
-                ts.setKhuVuc(priorityZone);
-                ts.setNoiSinh(birthPlace);
-
-                // 4. Thêm vào danh sách (RAM)
-                candidateList.add(ts);
+            if (lastRowNum >= 1) {
+                candidateList = readCandidateRows(sheet, dataFormatter, 1, lastRowNum);
             }
-
-            System.out.println("Đã đọc thành công " + candidateList.size() + " dòng từ Excel vào RAM.");
-
         } catch (Exception e) {
             System.err.println("Lỗi khi đọc file Excel: " + e.getMessage());
             e.printStackTrace();

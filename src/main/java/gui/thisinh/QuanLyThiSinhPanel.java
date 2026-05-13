@@ -18,6 +18,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class QuanLyThiSinhPanel extends JPanel {
     private final ThiSinhBUS candidateBUS;
@@ -99,7 +101,7 @@ public class QuanLyThiSinhPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(260, 36));
         txtSearch.setToolTipText("Nhập CCCD, Họ, Tên hoặc Họ & Tên");
 
-        btnSearch = new CustomButton("🔍 Tìm", UIConstants.PRIMARY_COLOR);
+        btnSearch = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
         btnReset = new CustomButton("✕ Xóa lọc", new Color(120, 120, 120));
@@ -115,10 +117,10 @@ public class QuanLyThiSinhPanel extends JPanel {
         pnlActions.setOpaque(false);
 
         btnAdd        = new CustomButton("+ Thêm mới",   UIConstants.SUCCESS_COLOR);
-        btnEdit       = new CustomButton("✎ Sửa",        UIConstants.PRIMARY_COLOR);
-        btnDelete     = new CustomButton("🗑 Xóa",       UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("👁 Chi tiết",  new Color(142, 68, 173));
-        btnImport     = new CustomButton("⬆ Import",    new Color(22, 160, 133));
+        btnEdit       = new CustomButton("Sửa",        UIConstants.PRIMARY_COLOR);
+        btnDelete     = new CustomButton("Xóa",       UIConstants.DANGER_COLOR);
+        btnViewDetail = new CustomButton("Chi tiết",  new Color(142, 68, 173));
+        btnImport     = new CustomButton("Import",    new Color(22, 160, 133));
 
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
             b.setPreferredSize(new Dimension(120, 36));
@@ -198,14 +200,14 @@ public class QuanLyThiSinhPanel extends JPanel {
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
 
-        btnPrev = new CustomButton("◀ Trước", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
 
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
 
-        btnNext = new CustomButton("Sau ▶", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
 
         pnlPaging.add(btnPrev);
@@ -477,8 +479,22 @@ public class QuanLyThiSinhPanel extends JPanel {
         SwingWorker<String, Void> worker = new SwingWorker<>() {
             @Override
             protected String doInBackground() throws Exception {
-                List<ThiSinh> danhSach = ExcelUtil.readCandidateExcel(selectedFile);
-                return candidateBUS.importCandidates(danhSach);
+                Set<String> cccdCache = candidateBUS.newImportCccdCache();
+                ThiSinhBUS.ImportCandidateResult tongKet = new ThiSinhBUS.ImportCandidateResult();
+                AtomicInteger soLoCoDuLieu = new AtomicInteger(0);
+                ExcelUtil.forEachCandidateExcelBatch(
+                        selectedFile,
+                        ExcelUtil.CANDIDATE_IMPORT_BATCH_SIZE,
+                        batch -> {
+                            if (!batch.isEmpty()) {
+                                soLoCoDuLieu.incrementAndGet();
+                            }
+                            tongKet.merge(candidateBUS.importCandidatesBatch(batch, cccdCache));
+                        });
+                if (soLoCoDuLieu.get() == 0 && tongKet.isEmptyTotals()) {
+                    return "Lỗi: Danh sách import trống hoặc file Excel không có dữ liệu!";
+                }
+                return tongKet.formatMessage();
             }
             @Override
             protected void done() {

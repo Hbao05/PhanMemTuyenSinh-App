@@ -5,10 +5,13 @@
     <session-factory>
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
         <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/xettuyen2026?serverTimezone=UTC</property>
-        <property name="hibernate.connection.username">root</property> <property name="hibernate.connection.password">121105</property> <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+        <property name="hibernate.connection.username">root</property>
+        <property name="hibernate.connection.password">root</property>
+        <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
 
         <property name="hibernate.show_sql">true</property>
         <property name="hibernate.format_sql">true</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
 
         <mapping class="entity.ThiSinh" />
         <mapping class="entity.Nganh" />
@@ -18,6 +21,7 @@
         <mapping class="entity.NganhToHop" />
         <mapping class="entity.BangQuyDoi" />
         <mapping class="entity.ToHopMonThi" />
+        <mapping class="entity.NguoiDung" />
 
     </session-factory>
 </hibernate-configuration>

@@ -1,9 +1,7 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
@@ -42,4 +40,18 @@ public class DiemCongXetTuyen {
 
     @Column(name = "dc_keys", unique = true, nullable = false)
     private String dcKeys;
+
+    // ── Quan hệ: DiemCongXetTuyen N-1 ThiSinh (theo ts_cccd → cccd) ──
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ts_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private ThiSinh thiSinh;
+
+    // ── Quan hệ: DiemCongXetTuyen N-1 Nganh (theo manganh) ──
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manganh", referencedColumnName = "manganh", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Nganh nganh;
 }

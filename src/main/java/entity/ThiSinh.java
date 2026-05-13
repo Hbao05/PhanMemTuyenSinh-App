@@ -1,11 +1,10 @@
 package entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -56,4 +55,21 @@ public class ThiSinh {
 
     @Column(name = "khu_vuc")
     private String khuVuc;
+
+    @PrePersist
+    private void prePersist() {
+        updatedAt = LocalDate.now();
+    }
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<NguyenVongXetTuyen> danhSachNguyenVong;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ts_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<DiemCongXetTuyen> danhSachDiemCong;
 }
