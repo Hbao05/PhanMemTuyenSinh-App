@@ -6,29 +6,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Hệ Thống Quản Lý Tuyển Sinh 2026** — a Java Swing desktop application for managing university admissions: candidates, majors, exam subject groups, and admission decisions.
 
-**Stack:** Java 21 · Maven · Hibernate 6 (JPA) · MySQL 8.0 · Apache POI · Lombok
+**Stack:** Java 21 · Maven · Hibernate 6 (JPA) · MySQL 8.0 · Apache POI · Lombok · jBCrypt · JFreeChart
 
 ## Commands
 
 ### Build & Run
 ```bash
 mvn clean compile         # Compile
-mvn clean package         # Build JAR/WAR
+mvn clean package         # Build JAR
 ```
-Run the application by executing `gui.MainFrame.main()` from your IDE.
+Entry point: `MainApp.main()` — sets system L&F and launches `LoginFrame`. Run from IDE.
 
 ### Database
 ```bash
 docker-compose up -d      # Start MySQL (localhost:3306, DB: xettuyen2026)
 docker-compose down       # Stop
 ```
-Credentials: `user123` / `password123` (root: `root`/`root`)
+Hibernate credentials (hibernate.cfg.xml): `root` / `root`. Docker also exposes `user123` / `password123`.
 
-### Utility Scripts (run directly from IDE or mvn exec)
+### Utility Classes (run from IDE)
 - `AlterSchema.java` — migrate schema
 - `CheckDB.java` / `CheckSchema.java` — inspect DB state
-- `ClearDB.java` — wipe records
-- `TestDB.java` — test connection and import Excel data
+- `ClearDB.java` — wipe all records
+- `SeedAdminUser.java` — create default admin account
 - `python scripts/inspect_data.py` — inspect Excel file structure
 
 ## Architecture
@@ -36,38 +36,54 @@ Credentials: `user123` / `password123` (root: `root`/`root`)
 3-tier layered desktop app (no Spring):
 
 ```
-gui.*      →  bus.*    →  dao.*    →  entity.*  →  MySQL
-(Swing UI)   (Business)  (Hibernate)  (JPA POJOs)
+gui.*      →  bus.*      →  dao.*        →  entity.*   →  MySQL
+(Swing UI)   (Business)    (Hibernate)     (JPA POJOs)
 ```
 
-**`gui/`** — Swing panels, one per management domain. `MainFrame.java` is the entry point; it uses `CardLayout` to switch between 9 screens. Custom components (`CustomButton`, `CustomTable`, etc.) live in `gui/component/`. All colors/fonts are defined in `gui/style/UIConstants.java`.
+**`MainApp.java`** — true entry point; opens `LoginFrame` (3-attempt lockout with 30s delay, BCrypt auth). On success, loads `MainFrame`.
 
-**`bus/`** — Business logic: validation, pagination (50 rows/page), import orchestration. `ThiSinhBUS` has an `ImportCandidateResult` inner class tracking import success/duplicate/failure counts.
+**`app/Session.java`** — static holder for the logged-in `NguoiDung`; `isAdmin()` drives sidebar menu visibility.
 
-**`dao/`** — Hibernate CRUD via `HibernateUtil.getSessionFactory()`. Standard pattern: open session → begin transaction → operate → commit/rollback.
+**`gui/`** — `MainFrame` uses `CardLayout` to host 9 domain panels. Custom widgets in `gui/component/` (`CustomButton`, `CustomTable`, `CustomTextField`, `CustomComboBox`). All colors/fonts in `gui/style/UIConstants.java`.
 
-**`entity/`** — 8 JPA-annotated entities:
-| Entity | Table | Purpose |
+**`bus/`** — Validation, pagination (20 rows/page via `ROWS_PER_PAGE`), and import orchestration. `ThiSinhBUS.ImportCandidateResult` tracks success/duplicate/failure counts. `XetTuyenEngine` contains static methods for admission score calculation.
+
+**`dao/`** — Hibernate CRUD via `HibernateUtil.getSessionFactory()`. Pattern: try-with-resources session → beginTransaction → persist/merge/remove → commit, rollback on exception.
+
+**`entity/`** — 9 JPA-annotated entities:
+
+| Entity | Table | Notes |
 |---|---|---|
-| `ThiSinh` | `xt_thisinhxettuyen25` | Candidates |
-| `Nganh` | `xt_nganh` | Majors |
-| `ToHopMonThi` | `xt_tohop_monthi` | Exam subject groups |
-| `NganhToHop` | `xt_nganh_tohop` | Major ↔ subject mapping |
-| `NguoiDung` | `xt_nguoidung` | User accounts |
-| `NguyenVongXetTuyen` | — | Admission preferences |
-| `DiemThiXetTuyen` | — | Exam scores |
-| `DiemCongXetTuyen` | — | Bonus points |
+| `ThiSinh` | `xt_thisinhxettuyen25` | Candidates; cccd is unique key |
+| `Nganh` | `xt_nganh` | Majors; holds chiTieu (quota) and score thresholds |
+| `ToHopMonThi` | `xt_tohop_monthi` | Exam subject groups (3 subjects) |
+| `NganhToHop` | `xt_nganh_tohop` | Major ↔ subject mapping with per-subject coefficients |
+| `NguyenVongXetTuyen` | `xt_nguyenvongxettuyen` | Admission preferences; stores computed scores + ketQua |
+| `DiemThiXetTuyen` | `xt_diemthixettuyen` | Exam scores; one row per candidate |
+| `DiemCongXetTuyen` | `xt_diemcongxetuyen` | Bonus points per candidate+major+method |
+| `BangQuyDoi` | `xt_bangquydoi` | Score conversion tables |
+| `NguoiDung` | `xt_nguoidung` | User accounts; quyen = ADMIN \| USER |
 
-**`util/`** — `HibernateUtil.java` (singleton SessionFactory), `ExcelUtil.java` (Apache POI read/write for `.xlsx` import templates in `docs/`).
+**`util/`** — `HibernateUtil.java` (singleton SessionFactory), `ExcelUtil.java` (POI batch reader, 1000 rows/batch), `PasswordUtil.java` (BCrypt wrap).
+
+Excel import templates are in `src/main/resources/data_import/` (`thisinh_import.xlsx`, `nganh_import.xlsx`, `tohopmon_import.xlsx`, `nganhtohop_import.xlsx`).
+
+## Admission Score Formula
+
+`XetTuyenEngine` computes:
+
+```
+ĐTHXT  = weighted sum of 3 subject scores per NganhToHop coefficients
+ĐƯT    = area priority (0.25–0.75) + category priority (0–2.0), capped at 3.0
+ĐXT    = ĐTHXT + ĐC (DiemCong) + ĐƯT
+```
+
+Candidates are ranked by ĐXT descending; `chiTieu` slots per major determine admission (`ketQua`).
 
 ## Key Conventions
 
-- `hibernate.cfg.xml` sets `hbm2ddl.auto=update` — schema evolves automatically; avoid dropping tables manually.
-- Relationships use `FetchType.LAZY`; open a Hibernate session when accessing lazy-loaded collections.
-- All Hibernate sessions follow try-with-resources or explicit close in `finally`.
-- Lombok `@Data` / `@Getter` / `@Setter` reduces boilerplate on entities — do not write manual getters/setters.
-- Excel import templates live in `docs/` (e.g., `Ds thi sinh.xlsx`, `Chi tieu 2025.xlsx`).
-
-## Work in Progress
-
-Screens for User Management (menu 1), Exam Scores (6), Bonus Points (7), Admissions (8), and Conversion Table (9) are placeholders. Implemented screens: Candidates (2), Majors (3), Subject Groups (4), Major-Subject Mapping (5).
+- `hibernate.cfg.xml` uses `hbm2ddl.auto=update` — schema evolves automatically; never drop tables manually.
+- Relationships use `FetchType.LAZY`; always have an open Hibernate session when traversing associations.
+- Lombok `@Data` / `@Getter` / `@Setter` on all entities — do not write manual getters/setters.
+- Passwords are BCrypt-hashed (`PasswordUtil.hash` / `PasswordUtil.verify`); never store plaintext.
+- All BUS pagination uses `offset = (page-1) * ROWS_PER_PAGE` and a matching `calculateTotalPages()`.
