@@ -1,6 +1,7 @@
 package gui;
 
 import app.Session;
+import gui.auth.LoginFrame;
 import gui.bangquydoi.QuanLyBangQuyDoiPanel;
 import gui.diemcong.QuanLyDiemCongPanel;
 import gui.diemthi.QuanLyDiemThiPanel;
@@ -25,10 +26,11 @@ public class MainFrame extends JFrame {
     private final List<SidebarItem> menuItems = new ArrayList<>();
 
     public MainFrame() {
-        setTitle("He Thong Quan Ly Tuyen Sinh 2026");
+        setTitle("Hệ thống quản lý tuyển sinh 2026");
         setSize(1280, 720);
         setMinimumSize(new Dimension(1024, 600));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
@@ -76,12 +78,12 @@ public class MainFrame extends JFrame {
         logoCircle.setOpaque(false);
         logoCircle.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel title = new JLabel("TUYEN SINH");
+        JLabel title = new JLabel("TUYỂN SINH");
         title.setFont(UIConstants.FONT_TITLE);
         title.setForeground(Color.WHITE);
         title.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel subtitle = new JLabel("He thong quan ly 2026");
+        JLabel subtitle = new JLabel("Hệ thống quản lý 2026");
         subtitle.setFont(UIConstants.FONT_SMALL);
         subtitle.setForeground(UIConstants.SIDEBAR_TEXT);
         subtitle.setAlignmentX(CENTER_ALIGNMENT);
@@ -150,7 +152,7 @@ public class MainFrame extends JFrame {
                 BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(55, 65, 81)),
                 BorderFactory.createEmptyBorder(12, 14, 16, 14)));
 
-        JButton btnExit = new JButton("Dang xuat / Thoat");
+        JButton btnExit = new JButton("Đăng xuất / Thoát");
         btnExit.setFont(UIConstants.FONT_BOLD);
         btnExit.setForeground(new Color(252, 129, 129));
         btnExit.setBackground(new Color(55, 30, 30));
@@ -160,7 +162,14 @@ public class MainFrame extends JFrame {
         btnExit.setFocusPainted(false);
         btnExit.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnExit.setPreferredSize(new Dimension(Integer.MAX_VALUE, 38));
-        btnExit.addActionListener(e -> System.exit(0));
+        btnExit.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                Session.logout();
+                dispose();
+                new LoginFrame().setVisible(true);
+            }
+        });
         btnExit.addMouseListener(new MouseAdapter() {
             @Override public void mouseEntered(MouseEvent e) {
                 btnExit.setBackground(UIConstants.DANGER_COLOR);
@@ -212,7 +221,7 @@ public class MainFrame extends JFrame {
         lblName.setForeground(UIConstants.TABLE_HEADER_COLOR);
         lblName.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel lblSub = new JLabel("Chuc nang dang duoc phat trien...", SwingConstants.CENTER);
+        JLabel lblSub = new JLabel("Chức năng đang được phát triển...", SwingConstants.CENTER);
         lblSub.setFont(UIConstants.FONT_NORMAL);
         lblSub.setForeground(UIConstants.GRAY_COLOR);
         lblSub.setAlignmentX(CENTER_ALIGNMENT);

@@ -64,7 +64,7 @@ public class DoiMatKhauDialog extends JDialog {
 
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Doi MK", UIConstants.WARNING_COLOR);
+        CustomButton btnSave   = new CustomButton("Đổi MK", UIConstants.WARNING_COLOR);
         CustomButton btnCancel = new CustomButton("Hủy",        UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(120, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));

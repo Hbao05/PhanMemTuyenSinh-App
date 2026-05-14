@@ -12,8 +12,10 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
 
 public class QuanLyDiemCongPanel extends JPanel {
@@ -22,7 +24,7 @@ public class QuanLyDiemCongPanel extends JPanel {
 
     private CustomTextField txtSearch;
     private CustomButton    btnSearch, btnReset;
-    private CustomButton    btnAdd, btnEdit, btnDelete;
+    private CustomButton    btnImport, btnAdd, btnEdit, btnDelete;
 
     private CustomTable       tblData;
     private DefaultTableModel tableModel;
@@ -55,11 +57,11 @@ public class QuanLyDiemCongPanel extends JPanel {
         pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
-        JLabel lblTitle = new JLabel("QUAN LY DIEM CONG");
+        JLabel lblTitle = new JLabel("QUẢN LÝ ĐIỂM CỘNG");
         lblTitle.setFont(UIConstants.FONT_TITLE);
         lblTitle.setForeground(Color.WHITE);
 
-        lblTotalRecords = new JLabel("Dang tai...");
+        lblTotalRecords = new JLabel("Đang tải...");
         lblTotalRecords.setFont(UIConstants.FONT_NORMAL);
         lblTotalRecords.setForeground(UIConstants.PRIMARY_LIGHT);
 
@@ -72,13 +74,13 @@ public class QuanLyDiemCongPanel extends JPanel {
 
         JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlSearch.setOpaque(false);
-        JLabel lblSearch = new JLabel("Tim kiem:");
+        JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
         txtSearch = new CustomTextField(22);
         txtSearch.setPreferredSize(new Dimension(260, 36));
-        txtSearch.setToolTipText("Nhap CCCD, ma nganh, ma to hop");
-        btnSearch = new CustomButton("Tim",     UIConstants.PRIMARY_COLOR);
-        btnReset  = new CustomButton("Xoa loc", UIConstants.GRAY_COLOR);
+        txtSearch.setToolTipText("Nhập CCCD, mã ngành, mã tổ hợp");
+        btnSearch = new CustomButton("Tìm",     UIConstants.PRIMARY_COLOR);
+        btnReset  = new CustomButton("Xóa lọc", UIConstants.GRAY_COLOR);
         btnSearch.setPreferredSize(new Dimension(90, 36));
         btnReset.setPreferredSize(new Dimension(110, 36));
         pnlSearch.add(lblSearch);
@@ -88,10 +90,11 @@ public class QuanLyDiemCongPanel extends JPanel {
 
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
-        btnAdd    = new CustomButton("+ Them", UIConstants.SUCCESS_COLOR);
-        btnEdit   = new CustomButton("Sua",    UIConstants.PRIMARY_COLOR);
-        btnDelete = new CustomButton("Xoa",    UIConstants.DANGER_COLOR);
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete}) {
+        btnImport     = new CustomButton("Import",   UIConstants.TEAL_COLOR);
+        btnAdd    = new CustomButton("+ Thêm", UIConstants.SUCCESS_COLOR);
+        btnEdit   = new CustomButton("Sửa",    UIConstants.PRIMARY_COLOR);
+        btnDelete = new CustomButton("Xóa",    UIConstants.DANGER_COLOR);
+        for (CustomButton b : new CustomButton[]{btnImport, btnAdd, btnEdit, btnDelete}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
         }
@@ -113,8 +116,8 @@ public class QuanLyDiemCongPanel extends JPanel {
 
     // ── TABLE ────────────────────────────────────────────────────────────
     private void buildTable() {
-        String[] cols = {"ID", "CCCD", "Ho ten thi sinh", "Ma nganh", "Ma to hop",
-                         "Phuong thuc", "Diem CC", "Diem UTXT", "Tong", "Ghi chu"};
+        String[] cols = {"ID", "CCCD", "Họ tên thí sinh", "Mã ngành", "Mã tổ hợp",
+                         "Phương thức", "Điểm CC", "Điểm UTXT", "Tổng", "Ghi chú"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override public Class<?> getColumnClass(int c) {
@@ -156,12 +159,12 @@ public class QuanLyDiemCongPanel extends JPanel {
 
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
-        btnPrev = new CustomButton("< Truoc", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
-        btnNext = new CustomButton("Sau >", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
         pnlPaging.add(btnPrev);
         pnlPaging.add(lblPageInfo);
@@ -185,6 +188,8 @@ public class QuanLyDiemCongPanel extends JPanel {
         btnPrev.addActionListener(e -> { if (currentPage > 1)         { currentPage--; loadData(); } });
         btnNext.addActionListener(e -> { if (currentPage < totalPages) { currentPage++; loadData(); } });
 
+        btnImport.addActionListener(e -> doImportExcel());
+
         btnAdd.addActionListener(e -> {
             DiemCongDialog dlg = new DiemCongDialog(getParentWindow(), null, bus);
             dlg.setVisible(true);
@@ -203,15 +208,15 @@ public class QuanLyDiemCongPanel extends JPanel {
             DiemCongXetTuyen dc = getSelected();
             if (dc == null) return;
             int ok = JOptionPane.showConfirmDialog(this,
-                    "Xoa diem cong cua CCCD \"" + dc.getCccd() + "\" - Nganh \"" + dc.getMaNganh() + "\"?",
-                    "Xac nhan xoa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Xóa điểm cộng của CCCD \"" + dc.getCccd() + "\" - Ngành \"" + dc.getMaNganh() + "\"?",
+                    "Xác nhận xóa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (ok == JOptionPane.YES_OPTION) {
                 String result = bus.deleteDiemCong(dc.getIdDiemCong());
                 if (result.startsWith("Success")) {
                     if (tableModel.getRowCount() == 1 && currentPage > 1) currentPage--;
                     loadData();
                 } else {
-                    JOptionPane.showMessageDialog(this, result, "Loi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -236,6 +241,81 @@ public class QuanLyDiemCongPanel extends JPanel {
         loadData();
     }
 
+    private void doImportExcel() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Chọn file Excel điểm cộng (.xlsx)");
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            
+            JDialog progressDialog = new JDialog(getParentWindow(), "Đang import...", Dialog.ModalityType.APPLICATION_MODAL);
+            progressDialog.setSize(400, 150);
+            progressDialog.setLocationRelativeTo(this);
+            progressDialog.setLayout(new BorderLayout(10, 10));
+            
+            JLabel lblStatus = new JLabel("Đang chuẩn bị đọc file...", SwingConstants.CENTER);
+            lblStatus.setFont(UIConstants.FONT_NORMAL);
+            lblStatus.setBorder(new EmptyBorder(10, 10, 0, 10));
+            
+            JProgressBar progressBar = new JProgressBar();
+            progressBar.setIndeterminate(true);
+            progressBar.setStringPainted(true);
+            progressBar.setString("Đang xử lý...");
+            
+            JPanel centerPanel = new JPanel(new BorderLayout());
+            centerPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
+            centerPanel.add(progressBar, BorderLayout.CENTER);
+            
+            progressDialog.add(lblStatus, BorderLayout.NORTH);
+            progressDialog.add(centerPanel, BorderLayout.CENTER);
+            
+            SwingWorker<Void, String> worker = new SwingWorker<>() {
+                private int finalSuccess = 0;
+                private int finalTotal = 0;
+                private String errorMessage = null;
+
+                @Override
+                protected Void doInBackground() {
+                    bus.importFromExcel(file, (processed, success, message) -> {
+                        finalTotal = processed;
+                        finalSuccess = success;
+                        if (message.startsWith("Lỗi")) {
+                            errorMessage = message;
+                        }
+                        publish("Đã đọc: " + processed + " | Thành công: " + success + " (" + message + ")");
+                    });
+                    return null;
+                }
+
+                @Override
+                protected void process(List<String> chunks) {
+                    if (!chunks.isEmpty()) {
+                        String latestMessage = chunks.get(chunks.size() - 1);
+                        lblStatus.setText(latestMessage);
+                        progressBar.setString(latestMessage);
+                    }
+                }
+
+                @Override
+                protected void done() {
+                    progressDialog.dispose();
+                    if (errorMessage != null) {
+                        JOptionPane.showMessageDialog(QuanLyDiemCongPanel.this, errorMessage, "Lỗi Import", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(QuanLyDiemCongPanel.this, 
+                            "Import thành công!\nTổng dòng đã đọc: " + finalTotal + "\nSố dòng thêm/cập nhật: " + finalSuccess, 
+                            "Hoàn thành", JOptionPane.INFORMATION_MESSAGE);
+                        currentPage = 1;
+                        loadData();
+                    }
+                }
+            };
+            
+            worker.execute();
+            progressDialog.setVisible(true); // Blocks until disposed
+        }
+    }
+
     // ── LOAD DATA ────────────────────────────────────────────────────────
     private void loadData() {
         tableModel.setRowCount(0);
@@ -244,11 +324,11 @@ public class QuanLyDiemCongPanel extends JPanel {
         if (currentKeyword.isEmpty()) {
             list       = bus.getList(currentPage);
             totalPages = bus.calculateTotalPages();
-            lblTotalRecords.setText("Tong: " + bus.getTotalCount() + " ban ghi");
+            lblTotalRecords.setText("Tổng: " + bus.getTotalCount() + " bản ghi");
         } else {
             list       = bus.search(currentPage, currentKeyword);
             totalPages = bus.calculateSearchTotalPages(currentKeyword);
-            lblTotalRecords.setText("Ket qua: " + bus.getSearchCount(currentKeyword) + " ban ghi");
+            lblTotalRecords.setText("Kết quả: " + bus.getSearchCount(currentKeyword) + " bản ghi");
         }
 
         lblPageInfo.setText("Trang " + currentPage + " / " + totalPages);
@@ -280,7 +360,7 @@ public class QuanLyDiemCongPanel extends JPanel {
     private DiemCongXetTuyen getSelected() {
         int row = tblData.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui long chon mot ban ghi!", "Chua chon",
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản ghi!", "Chưa chọn",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }

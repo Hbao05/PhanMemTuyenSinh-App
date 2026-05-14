@@ -61,11 +61,11 @@ public class QuanLyNguyenVongPanel extends JPanel {
         pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
-        JLabel lblTitle = new JLabel("NGUYEN VONG & XET TUYEN");
+        JLabel lblTitle = new JLabel("NGUYỆN VỌNG & XÉT TUYỂN");
         lblTitle.setFont(UIConstants.FONT_TITLE);
         lblTitle.setForeground(Color.WHITE);
 
-        lblTotalRecords = new JLabel("Dang tai...");
+        lblTotalRecords = new JLabel("Đang tải...");
         lblTotalRecords.setFont(UIConstants.FONT_NORMAL);
         lblTotalRecords.setForeground(UIConstants.PRIMARY_LIGHT);
 
@@ -77,12 +77,12 @@ public class QuanLyNguyenVongPanel extends JPanel {
         pnlFilter.setOpaque(false);
         pnlFilter.setBorder(new EmptyBorder(8, 15, 0, 15));
 
-        cboFilterNganh = new JComboBox<>(new String[]{"Tat ca nganh"});
+        cboFilterNganh = new JComboBox<>(new String[]{"Tất cả ngành"});
         cboFilterNganh.setFont(UIConstants.FONT_NORMAL);
         cboFilterNganh.setPreferredSize(new Dimension(180, 34));
 
         cboFilterKetQua = new JComboBox<>(new String[]{
-            "Tat ca KQ",
+            "Tất cả KQ",
             XetTuyenEngine.KQ_TRUNG_TUYEN,
             XetTuyenEngine.KQ_TRUOT_NV,
             XetTuyenEngine.KQ_TRUOT_NGANH,
@@ -92,10 +92,10 @@ public class QuanLyNguyenVongPanel extends JPanel {
         cboFilterKetQua.setFont(UIConstants.FONT_NORMAL);
         cboFilterKetQua.setPreferredSize(new Dimension(150, 34));
 
-        pnlFilter.add(new JLabel("Nganh:") {{ setFont(UIConstants.FONT_BOLD); }});
+        pnlFilter.add(new JLabel("Ngành:") {{ setFont(UIConstants.FONT_BOLD); }});
         pnlFilter.add(cboFilterNganh);
         pnlFilter.add(Box.createHorizontalStrut(10));
-        pnlFilter.add(new JLabel("Ket qua:") {{ setFont(UIConstants.FONT_BOLD); }});
+        pnlFilter.add(new JLabel("Kết quả:") {{ setFont(UIConstants.FONT_BOLD); }});
         pnlFilter.add(cboFilterKetQua);
 
         // Toolbar dòng 2: Search + Actions
@@ -105,13 +105,13 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
         JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlSearch.setOpaque(false);
-        JLabel lblSearch = new JLabel("Tim kiem:");
+        JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
         txtSearch = new CustomTextField(18);
         txtSearch.setPreferredSize(new Dimension(200, 36));
-        txtSearch.setToolTipText("Nhap CCCD hoac ma nganh");
-        btnSearch = new CustomButton("Tim",     UIConstants.PRIMARY_COLOR);
-        btnReset  = new CustomButton("Xoa loc", UIConstants.GRAY_COLOR);
+        txtSearch.setToolTipText("Nhập CCCD hoặc mã ngành");
+        btnSearch = new CustomButton("Tìm",     UIConstants.PRIMARY_COLOR);
+        btnReset  = new CustomButton("Xóa lọc", UIConstants.GRAY_COLOR);
         btnSearch.setPreferredSize(new Dimension(80, 36));
         btnReset.setPreferredSize(new Dimension(100, 36));
         pnlSearch.add(lblSearch); pnlSearch.add(txtSearch);
@@ -119,11 +119,11 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
-        btnAdd       = new CustomButton("+ Them",       UIConstants.SUCCESS_COLOR);
-        btnEdit      = new CustomButton("Sua",          UIConstants.PRIMARY_COLOR);
-        btnDelete    = new CustomButton("Xoa",          UIConstants.DANGER_COLOR);
+        btnAdd       = new CustomButton("+ Thêm",       UIConstants.SUCCESS_COLOR);
+        btnEdit      = new CustomButton("Sửa",          UIConstants.PRIMARY_COLOR);
+        btnDelete    = new CustomButton("Xóa",          UIConstants.DANGER_COLOR);
         btnXemKetQua = new CustomButton("Xem KQ",      new Color(124, 58, 237));
-        btnXetTuyen  = new CustomButton("▶ Xet tuyen", new Color(5, 150, 105));
+        btnXetTuyen  = new CustomButton("Chạy xét tuyển", new Color(5, 150, 105));
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnXemKetQua}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
@@ -149,8 +149,8 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
     // ── TABLE ────────────────────────────────────────────────────────────
     private void buildTable() {
-        String[] cols = {"ID","TT","CCCD","Ho ten","Ma nganh","Ten nganh",
-                         "To hop","PT","DTHGXT","DC","Uu tien","DXT","Ket qua"};
+        String[] cols = {"ID","TT","CCCD","Họ tên","Mã ngành","Tên ngành",
+                         "Tổ hợp","PT","DTHGXT","DC","Ưu tiên","DXT","Kết quả"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -196,12 +196,12 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
-        btnPrev = new CustomButton("< Truoc", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
-        btnNext = new CustomButton("Sau >", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
         pnlPaging.add(btnPrev); pnlPaging.add(lblPageInfo); pnlPaging.add(btnNext);
 
@@ -235,15 +235,15 @@ public class QuanLyNguyenVongPanel extends JPanel {
             NguyenVongXetTuyen nv = getSelected();
             if (nv == null) return;
             int ok = JOptionPane.showConfirmDialog(this,
-                    "Xoa nguyen vong cua CCCD \"" + nv.getCccd() + "\" - Nganh \"" + nv.getMaNganh() + "\"?",
-                    "Xac nhan xoa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Xóa nguyện vọng của CCCD \"" + nv.getCccd() + "\" - Ngành \"" + nv.getMaNganh() + "\"?",
+                    "Xác nhận xóa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (ok == JOptionPane.YES_OPTION) {
                 String result = bus.deleteNguyenVong(nv.getIdNv());
                 if (result.startsWith("Success")) {
                     if (tableModel.getRowCount() == 1 && currentPage > 1) currentPage--;
                     loadData();
                 } else {
-                    JOptionPane.showMessageDialog(this, result, "Loi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -262,10 +262,10 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
     private void applyFilter() {
         String selNganh = (String) cboFilterNganh.getSelectedItem();
-        filterNganh = (selNganh == null || selNganh.startsWith("Tat ca")) ? "" : selNganh.split(" - ")[0].trim();
+        filterNganh = (selNganh == null || selNganh.startsWith("Tất cả")) ? "" : selNganh.split(" - ")[0].trim();
 
         String selKq = (String) cboFilterKetQua.getSelectedItem();
-        filterKetQua = (selKq == null || selKq.startsWith("Tat ca")) ? "" : selKq;
+        filterKetQua = (selKq == null || selKq.startsWith("Tất cả")) ? "" : selKq;
 
         currentPage = 1;
         currentKeyword = "";
@@ -295,11 +295,11 @@ public class QuanLyNguyenVongPanel extends JPanel {
         if (currentKeyword.isEmpty()) {
             list       = bus.getList(currentPage, filterNganh, filterKetQua);
             totalPages = bus.calculateTotalPages(filterNganh, filterKetQua);
-            lblTotalRecords.setText("Tong: " + bus.getTotalCount(filterNganh, filterKetQua) + " ban ghi");
+            lblTotalRecords.setText("Tổng: " + bus.getTotalCount(filterNganh, filterKetQua) + " bản ghi");
         } else {
             list       = bus.search(currentPage, currentKeyword);
             totalPages = bus.calculateSearchTotalPages(currentKeyword);
-            lblTotalRecords.setText("Ket qua: " + bus.getSearchCount(currentKeyword) + " ban ghi");
+            lblTotalRecords.setText("Kết quả: " + bus.getSearchCount(currentKeyword) + " bản ghi");
         }
 
         lblPageInfo.setText("Trang " + currentPage + " / " + totalPages);
@@ -335,7 +335,7 @@ public class QuanLyNguyenVongPanel extends JPanel {
     private NguyenVongXetTuyen getSelected() {
         int row = tblData.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui long chon mot ban ghi!", "Chua chon",
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản ghi!", "Chưa chọn",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }

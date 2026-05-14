@@ -84,10 +84,10 @@ public class QuanLyToHopPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(260, 36));
         txtSearch.setToolTipText("Nhập mã tổ hợp hoặc tên tổ hợp");
 
-        btnSearch = new CustomButton("Tim", UIConstants.PRIMARY_COLOR);
+        btnSearch = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
-        btnReset = new CustomButton("Xoa loc", new Color(120, 120, 120));
+        btnReset = new CustomButton("Xóa lọc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
 
         pnlSearch.add(lblSearch);
@@ -99,8 +99,8 @@ public class QuanLyToHopPanel extends JPanel {
         pnlActions.setOpaque(false);
 
         btnAdd    = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
-        btnEdit   = new CustomButton("Sua",           UIConstants.PRIMARY_COLOR);
-        btnDelete = new CustomButton("Xoa",      UIConstants.DANGER_COLOR);
+        btnEdit   = new CustomButton("Sửa",           UIConstants.PRIMARY_COLOR);
+        btnDelete = new CustomButton("Xóa",      UIConstants.DANGER_COLOR);
         btnImport = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnImport}) {
@@ -168,14 +168,14 @@ public class QuanLyToHopPanel extends JPanel {
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
 
-        btnPrev = new CustomButton("◀ Trước", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
 
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
 
-        btnNext = new CustomButton("Sau ▶", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
 
         pnlPaging.add(btnPrev);
@@ -263,7 +263,7 @@ public class QuanLyToHopPanel extends JPanel {
 
         if (!currentKeyword.isEmpty()) {
             long found = bus.getSearchCount(currentKeyword);
-            lblTotalRecords.setText("Kết quả: \"" + currentKeyword + "\"  —  " + found + " tổ hợp");
+            lblTotalRecords.setText("Kết quả: \"" + currentKeyword + "\"  |  " + found + " tổ hợp");
         } else {
             long total = bus.getTotalCount();
             lblTotalRecords.setText("Tổng cộng: " + total + " tổ hợp");

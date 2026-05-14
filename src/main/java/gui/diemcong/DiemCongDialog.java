@@ -35,7 +35,7 @@ public class DiemCongDialog extends JDialog {
 
     public DiemCongDialog(Window parent, DiemCongXetTuyen target, DiemCongBUS bus) {
         super(parent,
-              target == null ? "Them moi Diem Cong" : "Sua Diem Cong",
+              target == null ? "Thêm mới điểm cộng" : "Sửa điểm cộng",
               ModalityType.APPLICATION_MODAL);
         this.bus    = bus;
         this.target = target;
@@ -52,7 +52,7 @@ public class DiemCongDialog extends JDialog {
         setContentPane(root);
 
         JLabel lblTitle = new JLabel(
-                target == null ? "THEM MOI DIEM CONG" : "SUA DIEM CONG",
+                target == null ? "THÊM MỚI ĐIỂM CỘNG" : "SỬA ĐIỂM CỘNG",
                 SwingConstants.CENTER);
         lblTitle.setFont(UIConstants.FONT_HEADER);
         lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
@@ -66,9 +66,9 @@ public class DiemCongDialog extends JDialog {
         gc.insets  = new Insets(5, 4, 5, 4);
         gc.anchor  = GridBagConstraints.WEST;
 
-        // CCCD row: text + Tra cuu button
+        // CCCD row: text + nút tra cứu
         txtCccd = new CustomTextField(16);
-        CustomButton btnTraCuu = new CustomButton("Tra cuu", UIConstants.PRIMARY_COLOR);
+        CustomButton btnTraCuu = new CustomButton("Tra cứu", UIConstants.PRIMARY_COLOR);
         btnTraCuu.setPreferredSize(new Dimension(90, 30));
         btnTraCuu.addActionListener(e -> traCuuThiSinh());
         JPanel pnlCccd = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -88,7 +88,7 @@ public class DiemCongDialog extends JDialog {
         // ToHop combobox
         cboToHop = new JComboBox<>();
         cboToHop.setFont(UIConstants.FONT_NORMAL);
-        cboToHop.addItem("(Khong co)");
+        cboToHop.addItem("(Không có)");
         loadToHop();
 
         // Phuong thuc
@@ -112,13 +112,13 @@ public class DiemCongDialog extends JDialog {
 
         Object[][] rows = {
             {"CCCD *",       pnlCccd},
-            {"Ho ten TS",    lblHoTen},
-            {"Nganh *",      cboNganh},
-            {"To hop",       cboToHop},
-            {"Phuong thuc *",cboPhuongThuc},
-            {"Diem CC",      spDiemCc},
-            {"Diem UTXT",    spDiemUtXt},
-            {"Ghi chu",      scrGhiChu},
+            {"Họ tên TS",    lblHoTen},
+            {"Ngành *",      cboNganh},
+            {"Tổ hợp",       cboToHop},
+            {"Phương thức *",cboPhuongThuc},
+            {"Điểm CC",      spDiemCc},
+            {"Điểm UTXT",    spDiemUtXt},
+            {"Ghi chú",      scrGhiChu},
         };
 
         for (int i = 0; i < rows.length; i++) {
@@ -135,8 +135,8 @@ public class DiemCongDialog extends JDialog {
 
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Luu",  UIConstants.SUCCESS_COLOR);
-        CustomButton btnCancel = new CustomButton("Huy",  UIConstants.GRAY_COLOR);
+        CustomButton btnSave   = new CustomButton("Lưu",  UIConstants.SUCCESS_COLOR);
+        CustomButton btnCancel = new CustomButton("Hủy",  UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(110, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));
         btnSave.addActionListener(e -> doSave());
@@ -164,13 +164,13 @@ public class DiemCongDialog extends JDialog {
 
     private void traCuuThiSinh() {
         String cccd = txtCccd.getText().trim();
-        if (cccd.isEmpty()) { lblHoTen.setText("Nhap CCCD truoc!"); return; }
+        if (cccd.isEmpty()) { lblHoTen.setText("Nhập CCCD trước!"); return; }
         ThiSinh ts = thiSinhBUS.getByCccd(cccd);
         if (ts != null) {
             lblHoTen.setText(ts.getHo() + " " + ts.getTen());
             lblHoTen.setForeground(UIConstants.SUCCESS_COLOR);
         } else {
-            lblHoTen.setText("Khong tim thay thi sinh!");
+            lblHoTen.setText("Không tìm thấy thí sinh!");
             lblHoTen.setForeground(UIConstants.DANGER_COLOR);
         }
     }
@@ -227,13 +227,13 @@ public class DiemCongDialog extends JDialog {
         String result = target == null ? bus.addDiemCong(dc) : bus.updateDiemCong(dc);
         if (result.startsWith("Success")) {
             JOptionPane.showMessageDialog(this,
-                    target == null ? "Them moi thanh cong!" : "Cap nhat thanh cong!",
-                    "Thong bao", JOptionPane.INFORMATION_MESSAGE);
+                    target == null ? "Thêm mới thành công!" : "Cập nhật thành công!",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             saved = true;
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result.replace("Error: ", ""),
-                    "Loi", JOptionPane.ERROR_MESSAGE);
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

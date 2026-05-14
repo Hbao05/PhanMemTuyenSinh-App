@@ -34,7 +34,7 @@ public class NguyenVongDialog extends JDialog {
 
     public NguyenVongDialog(Window parent, NguyenVongXetTuyen target, NguyenVongBUS bus) {
         super(parent,
-              target == null ? "Them moi Nguyen Vong" : "Sua Nguyen Vong",
+              target == null ? "Thêm mới nguyện vọng" : "Sửa nguyện vọng",
               ModalityType.APPLICATION_MODAL);
         this.bus    = bus;
         this.target = target;
@@ -51,7 +51,7 @@ public class NguyenVongDialog extends JDialog {
         setContentPane(root);
 
         JLabel lblTitle = new JLabel(
-                target == null ? "THEM MOI NGUYEN VONG" : "SUA NGUYEN VONG",
+                target == null ? "THÊM MỚI NGUYỆN VỌNG" : "SỬA NGUYỆN VỌNG",
                 SwingConstants.CENTER);
         lblTitle.setFont(UIConstants.FONT_HEADER);
         lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
@@ -67,7 +67,7 @@ public class NguyenVongDialog extends JDialog {
 
         // CCCD + nút tra cứu
         txtCccd = new CustomTextField(16);
-        CustomButton btnTraCuu = new CustomButton("Tra cuu", UIConstants.PRIMARY_COLOR);
+        CustomButton btnTraCuu = new CustomButton("Tra cứu", UIConstants.PRIMARY_COLOR);
         btnTraCuu.setPreferredSize(new Dimension(90, 30));
         btnTraCuu.addActionListener(e -> traCuuThiSinh());
         JPanel pnlCccd = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -94,11 +94,11 @@ public class NguyenVongDialog extends JDialog {
 
         Object[][] rows = {
             {"CCCD *",         pnlCccd},
-            {"Ho ten TS",      lblHoTen},
-            {"Thu tu NV *",    spThuTu},
-            {"Nganh *",        cboNganh},
-            {"To hop mon",     cboToHop},
-            {"Phuong thuc *",  cboPhuongThuc},
+            {"Họ tên TS",      lblHoTen},
+            {"Thứ tự NV *",    spThuTu},
+            {"Ngành *",        cboNganh},
+            {"Tổ hợp môn",     cboToHop},
+            {"Phương thức *",  cboPhuongThuc},
         };
 
         for (int i = 0; i < rows.length; i++) {
@@ -115,8 +115,8 @@ public class NguyenVongDialog extends JDialog {
 
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Luu",  UIConstants.SUCCESS_COLOR);
-        CustomButton btnCancel = new CustomButton("Huy",  UIConstants.GRAY_COLOR);
+        CustomButton btnSave   = new CustomButton("Lưu",  UIConstants.SUCCESS_COLOR);
+        CustomButton btnCancel = new CustomButton("Hủy",  UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(110, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));
         btnSave.addActionListener(e -> doSave());
@@ -144,13 +144,13 @@ public class NguyenVongDialog extends JDialog {
 
     private void traCuuThiSinh() {
         String cccd = txtCccd.getText().trim();
-        if (cccd.isEmpty()) { lblHoTen.setText("Nhap CCCD truoc!"); return; }
+        if (cccd.isEmpty()) { lblHoTen.setText("Nhập CCCD trước!"); return; }
         ThiSinh ts = thiSinhBUS.getByCccd(cccd);
         if (ts != null) {
             lblHoTen.setText(ts.getHo() + " " + ts.getTen());
             lblHoTen.setForeground(UIConstants.SUCCESS_COLOR);
         } else {
-            lblHoTen.setText("Khong tim thay thi sinh!");
+            lblHoTen.setText("Không tìm thấy thí sinh!");
             lblHoTen.setForeground(UIConstants.DANGER_COLOR);
         }
     }
@@ -198,13 +198,13 @@ public class NguyenVongDialog extends JDialog {
         String result = target == null ? bus.addNguyenVong(nv) : bus.updateNguyenVong(nv);
         if (result.startsWith("Success")) {
             JOptionPane.showMessageDialog(this,
-                    target == null ? "Them moi thanh cong!" : "Cap nhat thanh cong!",
-                    "Thong bao", JOptionPane.INFORMATION_MESSAGE);
+                    target == null ? "Thêm mới thành công!" : "Cập nhật thành công!",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             saved = true;
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result.replace("Error: ", ""),
-                    "Loi", JOptionPane.ERROR_MESSAGE);
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

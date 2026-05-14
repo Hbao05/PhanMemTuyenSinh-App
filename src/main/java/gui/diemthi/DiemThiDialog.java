@@ -29,7 +29,7 @@ public class DiemThiDialog extends JDialog {
 
     public DiemThiDialog(Window parent, DiemThiXetTuyen target, DiemThiBUS bus) {
         super(parent,
-              target == null ? "Them moi Diem Thi" : "Sua Diem Thi",
+              target == null ? "Thêm mới điểm thi" : "Sửa điểm thi",
               ModalityType.APPLICATION_MODAL);
         this.bus    = bus;
         this.target = target;
@@ -47,7 +47,7 @@ public class DiemThiDialog extends JDialog {
         setContentPane(root);
 
         JLabel lblTitle = new JLabel(
-                target == null ? "THEM MOI DIEM THI" : "SUA DIEM THI",
+                target == null ? "THÊM MỚI ĐIỂM THI" : "SỬA ĐIỂM THI",
                 SwingConstants.CENTER);
         lblTitle.setFont(UIConstants.FONT_HEADER);
         lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
@@ -69,7 +69,7 @@ public class DiemThiDialog extends JDialog {
         txtSbd  = new CustomTextField(18);
 
         addRow(pnlInfo, gc, 0, "CCCD *",    txtCccd);
-        addRow(pnlInfo, gc, 1, "So bao danh", txtSbd);
+        addRow(pnlInfo, gc, 1, "Số báo danh", txtSbd);
 
         // ── Radio phương thức ──
         JPanel pnlPt = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
@@ -83,7 +83,7 @@ public class DiemThiDialog extends JDialog {
         ButtonGroup bg = new ButtonGroup();
         bg.add(rdoThpt); bg.add(rdoVsat); bg.add(rdoDgnl);
         rdoThpt.setSelected(true);
-        pnlPt.add(new JLabel("Phuong thuc *:") {{ setFont(UIConstants.FONT_BOLD); }});
+        pnlPt.add(new JLabel("Phương thức *:") {{ setFont(UIConstants.FONT_BOLD); }});
         pnlPt.add(rdoThpt); pnlPt.add(rdoVsat); pnlPt.add(rdoDgnl);
         addRow(pnlInfo, gc, 2, null, pnlPt);
 
@@ -115,8 +115,8 @@ public class DiemThiDialog extends JDialog {
         // ── Buttons ──
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Luu",  UIConstants.SUCCESS_COLOR);
-        CustomButton btnCancel = new CustomButton("Huy",  UIConstants.GRAY_COLOR);
+        CustomButton btnSave   = new CustomButton("Lưu",  UIConstants.SUCCESS_COLOR);
+        CustomButton btnCancel = new CustomButton("Hủy",  UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(110, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));
         btnSave.addActionListener(e -> doSave());
@@ -132,21 +132,21 @@ public class DiemThiDialog extends JDialog {
 
     private JPanel buildThptVsatPanel() {
         return buildScoreGrid(new Object[][]{
-            {"Toan (0-10)", spToan}, {"Ly (0-10)", spLy},
-            {"Hoa (0-10)", spHoa},  {"Sinh (0-10)", spSinh},
-            {"Van (0-10)", spVan},  {"Su (0-10)", spSu},
-            {"Dia (0-10)", spDia},  {"Tieng Anh (0-10)", spTiengAnh},
-        }, "Diem thi THPT");
+            {"Toán (0-10)", spToan}, {"Lý (0-10)", spLy},
+            {"Hóa (0-10)", spHoa},  {"Sinh (0-10)", spSinh},
+            {"Văn (0-10)", spVan},  {"Sử (0-10)", spSu},
+            {"Địa (0-10)", spDia},  {"Tiếng Anh (0-10)", spTiengAnh},
+        }, "Điểm thi THPT");
     }
 
     private JPanel buildThptVsatPanel2() {
         // Tái dùng cùng spinner nhưng với label VSAT
         return buildScoreGrid(new Object[][]{
-            {"Toan (0-150)", spToan}, {"Ly (0-150)", spLy},
-            {"Hoa (0-150)", spHoa},  {"Sinh (0-150)", spSinh},
-            {"Van (0-150)", spVan},  {"Su (0-150)", spSu},
-            {"Dia (0-150)", spDia},  {"Tieng Anh (0-150)", spTiengAnh},
-        }, "Diem thi V-SAT");
+            {"Toán (0-150)", spToan}, {"Lý (0-150)", spLy},
+            {"Hóa (0-150)", spHoa},  {"Sinh (0-150)", spSinh},
+            {"Văn (0-150)", spVan},  {"Sử (0-150)", spSu},
+            {"Địa (0-150)", spDia},  {"Tiếng Anh (0-150)", spTiengAnh},
+        }, "Điểm thi V-SAT");
     }
 
     private JPanel buildDgnlPanel() {
@@ -160,7 +160,7 @@ public class DiemThiDialog extends JDialog {
             {"NL1",  spNl1},  {"NK1", spNk1},
             {"NK2",  spNk2},  {"CNCN", spCncn},
             {"CNNN", spCnnn}, {"KTPL", spKtpl},
-        }, "Diem thi DGNL");
+        }, "Điểm thi ĐGNL");
     }
 
     private JPanel buildScoreGrid(Object[][] rows, String title) {
@@ -265,13 +265,13 @@ public class DiemThiDialog extends JDialog {
         String result = target == null ? bus.addDiemThi(dt) : bus.updateDiemThi(dt);
         if (result.startsWith("Success")) {
             JOptionPane.showMessageDialog(this,
-                    target == null ? "Them moi thanh cong!" : "Cap nhat thanh cong!",
-                    "Thong bao", JOptionPane.INFORMATION_MESSAGE);
+                    target == null ? "Thêm mới thành công!" : "Cập nhật thành công!",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             saved = true;
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result.replace("Error: ", ""),
-                    "Loi", JOptionPane.ERROR_MESSAGE);
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

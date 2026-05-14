@@ -99,10 +99,10 @@ public class QuanLyNganhPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(260, 36));
         txtSearch.setToolTipText("Nhập mã ngành hoặc tên ngành");
 
-        btnSearch = new CustomButton("Tim", UIConstants.PRIMARY_COLOR);
+        btnSearch = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(100, 36));
 
-        btnReset = new CustomButton("Xoa loc", new Color(120, 120, 120));
+        btnReset = new CustomButton("Xóa lọc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
         btnReset.setToolTipText("Xóa từ khóa tìm kiếm, hiển thị toàn bộ danh sách");
 
@@ -116,9 +116,9 @@ public class QuanLyNganhPanel extends JPanel {
         pnlActions.setOpaque(false);
 
         btnAdd        = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
-        btnEdit       = new CustomButton("Sua",           UIConstants.PRIMARY_COLOR);
-        btnDelete     = new CustomButton("Xoa",      UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("Chi tiet", UIConstants.PURPLE_COLOR);
+        btnEdit       = new CustomButton("Sửa",           UIConstants.PRIMARY_COLOR);
+        btnDelete     = new CustomButton("Xóa",      UIConstants.DANGER_COLOR);
+        btnViewDetail = new CustomButton("Chi tiết", UIConstants.PURPLE_COLOR);
         btnImport     = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
@@ -174,14 +174,14 @@ public class QuanLyNganhPanel extends JPanel {
             tblNganh.getColumnModel().getColumn(c).setCellRenderer(CustomTable.centerRenderer());
         }
 
-        // Renderer đặc biệt: Y → ✔ xanh, null/khác → — xám (kết hợp zebra)
+        // Renderer đặc biệt: Y -> "Có" (xanh), null/khác -> "-" (xám)
         CustomTable.ZebraRenderer flagRend = new CustomTable.ZebraRenderer(SwingConstants.CENTER) {
             @Override
             public Component getTableCellRendererComponent(
                     JTable table, Object value, boolean isSelected,
                     boolean hasFocus, int row, int col) {
                 boolean isY = "Y".equalsIgnoreCase(String.valueOf(value));
-                super.getTableCellRendererComponent(table, isY ? "✔" : "—", isSelected, hasFocus, row, col);
+                super.getTableCellRendererComponent(table, isY ? "Có" : "-", isSelected, hasFocus, row, col);
                 if (!isSelected) setForeground(isY ? UIConstants.SUCCESS_COLOR : new Color(180, 180, 180));
                 return this;
             }
@@ -214,14 +214,14 @@ public class QuanLyNganhPanel extends JPanel {
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
 
-        btnPrev = new CustomButton("◀ Trước", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
 
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
 
-        btnNext = new CustomButton("Sau ▶", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
 
         pnlPaging.add(btnPrev);
@@ -339,7 +339,7 @@ public class QuanLyNganhPanel extends JPanel {
 
         if (!currentKeyword.isEmpty()) {
             long found = nganhBUS.getSearchCount(currentKeyword);
-            lblTotalRecords.setText("Kết quả: \"" + currentKeyword + "\"  —  " + found + " ngành");
+            lblTotalRecords.setText("Kết quả: \"" + currentKeyword + "\"  |  " + found + " ngành");
         } else {
             long total = nganhBUS.getTotalCount();
             lblTotalRecords.setText("Tổng cộng: " + total + " ngành");
@@ -353,7 +353,7 @@ public class QuanLyNganhPanel extends JPanel {
                         n.getTenNganh(),
                         n.getToHopGoc(),
                         n.getChiTieu(),
-                        n.getDiemSan() != null ? n.getDiemSan() : "—",
+                        n.getDiemSan() != null ? n.getDiemSan() : "-",
                         n.getTuyenThang(),
                         n.getDgnl(),
                         n.getThpt(),
@@ -468,8 +468,8 @@ public class QuanLyNganhPanel extends JPanel {
             lKey.setFont(UIConstants.FONT_BOLD);
             lKey.setForeground(Color.DARK_GRAY);
 
-            String val = (r[1] != null) ? r[1].toString() : "—";
-            JLabel lVal = new JLabel(val.isEmpty() ? "—" : val);
+            String val = (r[1] != null) ? r[1].toString() : "-";
+            JLabel lVal = new JLabel(val.isEmpty() ? "-" : val);
             lVal.setFont(UIConstants.FONT_NORMAL);
             lVal.setForeground(new Color(50, 50, 50));
 
@@ -503,6 +503,6 @@ public class QuanLyNganhPanel extends JPanel {
     }
 
     private String flag(String val) {
-        return "Y".equalsIgnoreCase(val) ? "✔ Có" : "✘ Không";
+        return "Y".equalsIgnoreCase(val) ? "Có" : "Không";
     }
 }

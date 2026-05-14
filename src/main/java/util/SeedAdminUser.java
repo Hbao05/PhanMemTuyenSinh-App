@@ -20,8 +20,8 @@ public class SeedAdminUser {
 
         String result = bus.addUser(nd, "admin123");
         System.out.println(result.startsWith("Success")
-                ? "✅ Tạo admin thành công! Username: admin | Password: admin123"
-                : "❌ " + result);
+                ? "Tạo admin thành công! Username: admin | Password: admin123"
+                : result);
 
         System.exit(0);
     }

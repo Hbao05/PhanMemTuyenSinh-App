@@ -19,7 +19,7 @@ public class XetTuyenDialog extends JDialog {
     private CustomButton btnRun, btnClose;
 
     public XetTuyenDialog(Window parent, NguyenVongBUS bus) {
-        super(parent, "Chay Xet Tuyen", ModalityType.APPLICATION_MODAL);
+        super(parent, "Chạy xét tuyển", ModalityType.APPLICATION_MODAL);
         this.bus = bus;
         setSize(480, 300);
         setLocationRelativeTo(parent);
@@ -42,14 +42,10 @@ public class XetTuyenDialog extends JDialog {
         pnlWarn.setBackground(new Color(254, 243, 199));
         pnlWarn.setOpaque(true);
 
-        JLabel lblWarnIcon = new JLabel("⚠");
-        lblWarnIcon.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-        lblWarnIcon.setForeground(new Color(180, 83, 9));
-        JLabel lblWarnText = new JLabel("<html><b>CANH BAO:</b> Thao tac nay se tinh lai TOAN BO diem va ket qua<br>"
-                + "cho tat ca nguyen vong. Du lieu cu se bi ghi de. Tiep tuc?</html>");
+        JLabel lblWarnText = new JLabel("<html><b>Cảnh báo:</b> Thao tác này sẽ tính lại toàn bộ điểm và kết quả<br>"
+                + "cho tất cả nguyện vọng. Dữ liệu cũ sẽ bị ghi đè. Tiếp tục?</html>");
         lblWarnText.setFont(UIConstants.FONT_NORMAL);
         lblWarnText.setForeground(new Color(92, 46, 0));
-        pnlWarn.add(lblWarnIcon, BorderLayout.WEST);
         pnlWarn.add(lblWarnText, BorderLayout.CENTER);
         root.add(pnlWarn, BorderLayout.NORTH);
 
@@ -59,11 +55,11 @@ public class XetTuyenDialog extends JDialog {
 
         progressBar = new JProgressBar(0, 100);
         progressBar.setStringPainted(true);
-        progressBar.setString("San sang...");
+        progressBar.setString("Sẵn sàng...");
         progressBar.setPreferredSize(new Dimension(0, 28));
         progressBar.setForeground(UIConstants.SUCCESS_COLOR);
 
-        lblStatus = new JLabel("Nhan \"Chay xet tuyen\" de bat dau.", SwingConstants.CENTER);
+        lblStatus = new JLabel("Nhấn \"Chạy xét tuyển\" để bắt đầu.", SwingConstants.CENTER);
         lblStatus.setFont(UIConstants.FONT_NORMAL);
         lblStatus.setForeground(UIConstants.TABLE_HEADER_COLOR);
 
@@ -74,8 +70,8 @@ public class XetTuyenDialog extends JDialog {
         // ── Buttons ──
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         pnlBtn.setOpaque(false);
-        btnRun   = new CustomButton("Chay xet tuyen", UIConstants.SUCCESS_COLOR);
-        btnClose = new CustomButton("Dong",           UIConstants.GRAY_COLOR);
+        btnRun   = new CustomButton("Chạy xét tuyển", UIConstants.SUCCESS_COLOR);
+        btnClose = new CustomButton("Đóng",           UIConstants.GRAY_COLOR);
         btnRun.setPreferredSize(new Dimension(160, 38));
         btnClose.setPreferredSize(new Dimension(100, 38));
         btnRun.addActionListener(e -> startXetTuyen());
@@ -87,8 +83,8 @@ public class XetTuyenDialog extends JDialog {
     private void startXetTuyen() {
         btnRun.setEnabled(false);
         progressBar.setValue(0);
-        progressBar.setString("Dang xu ly...");
-        lblStatus.setText("Dang tinh diem...");
+        progressBar.setString("Đang xử lý...");
+        lblStatus.setText("Đang tính điểm...");
 
         SwingWorker<String, int[]> worker = new SwingWorker<>() {
             @Override
@@ -104,7 +100,7 @@ public class XetTuyenDialog extends JDialog {
                 int pct = total == 0 ? 0 : (int) (done * 100.0 / total);
                 progressBar.setValue(pct);
                 progressBar.setString(pct + "%");
-                lblStatus.setText("Dang xu ly: " + done + " / " + total + " nguyen vong...");
+                lblStatus.setText("Đang xử lý: " + done + " / " + total + " nguyện vọng...");
             }
 
             @Override
@@ -114,8 +110,8 @@ public class XetTuyenDialog extends JDialog {
                     if (result.startsWith("Success")) {
                         summary = result.substring(8); // bỏ "Success|"
                         progressBar.setValue(100);
-                        progressBar.setString("Hoan thanh!");
-                        lblStatus.setText("<html><b>XET TUYEN HOAN TAT</b><br>" + summary + "</html>");
+                        progressBar.setString("Hoàn thành!");
+                        lblStatus.setText("<html><b>XÉT TUYỂN HOÀN TẤT</b><br>" + summary + "</html>");
                         lblStatus.setForeground(UIConstants.SUCCESS_COLOR);
                         completed = true;
                     } else {
@@ -124,7 +120,7 @@ public class XetTuyenDialog extends JDialog {
                         btnRun.setEnabled(true);
                     }
                 } catch (Exception ex) {
-                    lblStatus.setText("Loi: " + ex.getMessage());
+                    lblStatus.setText("Lỗi: " + ex.getMessage());
                     lblStatus.setForeground(UIConstants.DANGER_COLOR);
                     btnRun.setEnabled(true);
                 }

@@ -30,7 +30,7 @@ public class LoginFrame extends JFrame {
         setTitle("Đăng nhập — Hệ thống Tuyển sinh 2026");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
-        setSize(420, 480);
+        setSize(420, 530);
         setLocationRelativeTo(null);
 
         initUI();
@@ -68,7 +68,7 @@ public class LoginFrame extends JFrame {
         lblIcon.setOpaque(false);
         lblIcon.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel lblTitle = new JLabel("HE THONG TUYEN SINH 2026");
+        JLabel lblTitle = new JLabel("HỆ THỐNG TUYỂN SINH 2026");
         lblTitle.setFont(UIConstants.FONT_TITLE);
         lblTitle.setForeground(Color.WHITE);
         lblTitle.setAlignmentX(CENTER_ALIGNMENT);

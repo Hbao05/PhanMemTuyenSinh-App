@@ -22,7 +22,7 @@ public class KetQuaXetTuyenDialog extends JDialog {
     private JLabel              lblHoTen;
 
     public KetQuaXetTuyenDialog(Window parent, NguyenVongBUS bus) {
-        super(parent, "Xem Ket Qua Xet Tuyen Theo Thi Sinh", ModalityType.APPLICATION_MODAL);
+        super(parent, "Xem kết quả xét tuyển theo thí sinh", ModalityType.APPLICATION_MODAL);
         this.bus = bus;
         setSize(800, 480);
         setLocationRelativeTo(parent);
@@ -41,7 +41,7 @@ public class KetQuaXetTuyenDialog extends JDialog {
         pnlTop.setOpaque(false);
         txtCccd = new CustomTextField(18);
         txtCccd.setPreferredSize(new Dimension(200, 34));
-        CustomButton btnTim = new CustomButton("Tim", UIConstants.PRIMARY_COLOR);
+        CustomButton btnTim = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
         btnTim.setPreferredSize(new Dimension(80, 34));
         btnTim.addActionListener(e -> loadKetQua());
         txtCccd.addActionListener(e -> loadKetQua());
@@ -55,8 +55,8 @@ public class KetQuaXetTuyenDialog extends JDialog {
         root.add(pnlTop, BorderLayout.NORTH);
 
         // ── Bảng kết quả ──
-        String[] cols = {"TT", "Ma nganh", "Ten nganh", "To hop", "PT",
-                         "DTHGXT", "Diem cong", "Uu tien", "Diem XT", "Ket qua"};
+        String[] cols = {"TT", "Mã ngành", "Tên ngành", "Tổ hợp", "PT",
+                         "DTHGXT", "Điểm cộng", "Ưu tiên", "Điểm XT", "Kết quả"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -81,7 +81,7 @@ public class KetQuaXetTuyenDialog extends JDialog {
         // ── Đóng ──
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pnlBtn.setOpaque(false);
-        CustomButton btnClose = new CustomButton("Dong", UIConstants.GRAY_COLOR);
+        CustomButton btnClose = new CustomButton("Đóng", UIConstants.GRAY_COLOR);
         btnClose.setPreferredSize(new Dimension(90, 34));
         btnClose.addActionListener(e -> dispose());
         pnlBtn.add(btnClose);
@@ -95,14 +95,14 @@ public class KetQuaXetTuyenDialog extends JDialog {
 
         List<NguyenVongXetTuyen> list = bus.getByCccd(cccd);
         if (list.isEmpty()) {
-            lblHoTen.setText("Khong tim thay nguyen vong!");
+            lblHoTen.setText("Không tìm thấy nguyện vọng!");
             return;
         }
 
         // Hiện tên từ bản ghi đầu tiên (lazy-loaded nganh)
         NguyenVongXetTuyen first = list.get(0);
         lblHoTen.setText(first.getThiSinh() != null
-                ? "→ " + first.getThiSinh().getHo() + " " + first.getThiSinh().getTen() : "");
+                ? first.getThiSinh().getHo() + " " + first.getThiSinh().getTen() : "");
 
         for (NguyenVongXetTuyen nv : list) {
             String tenNganh = nv.getNganh() != null ? nv.getNganh().getTenNganh() : "";

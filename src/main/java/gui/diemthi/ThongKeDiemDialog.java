@@ -29,7 +29,7 @@ public class ThongKeDiemDialog extends JDialog {
     private JFreeChart        currentChart;
 
     public ThongKeDiemDialog(Window parent, DiemThiBUS bus) {
-        super(parent, "Thong ke Diem thi", ModalityType.APPLICATION_MODAL);
+        super(parent, "Thống kê điểm thi", ModalityType.APPLICATION_MODAL);
         this.bus = bus;
         setSize(720, 580);
         setLocationRelativeTo(parent);
@@ -63,21 +63,21 @@ public class ThongKeDiemDialog extends JDialog {
         });
         cboMon.addActionListener(e -> loadStats());
 
-        CustomButton btnXuatAnh = new CustomButton("Xuat PNG", UIConstants.PRIMARY_COLOR);
+        CustomButton btnXuatAnh = new CustomButton("Xuất PNG", UIConstants.PRIMARY_COLOR);
         btnXuatAnh.setPreferredSize(new Dimension(110, 32));
         btnXuatAnh.addActionListener(e -> exportPng());
 
-        pnlFilter.add(new JLabel("Phuong thuc:") {{ setFont(UIConstants.FONT_BOLD); }});
+        pnlFilter.add(new JLabel("Phương thức:") {{ setFont(UIConstants.FONT_BOLD); }});
         pnlFilter.add(cboPhuongThuc);
         pnlFilter.add(Box.createHorizontalStrut(10));
-        pnlFilter.add(new JLabel("Mon:") {{ setFont(UIConstants.FONT_BOLD); }});
+        pnlFilter.add(new JLabel("Môn:") {{ setFont(UIConstants.FONT_BOLD); }});
         pnlFilter.add(cboMon);
         pnlFilter.add(Box.createHorizontalStrut(20));
         pnlFilter.add(btnXuatAnh);
         root.add(pnlFilter, BorderLayout.NORTH);
 
         // ── Bảng thống kê ──
-        String[] statsCols = {"Chi so", "Gia tri"};
+        String[] statsCols = {"Chỉ số", "Giá trị"};
         statsModel = new DefaultTableModel(statsCols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -93,7 +93,7 @@ public class ThongKeDiemDialog extends JDialog {
         scrStats.setPreferredSize(new Dimension(260, 0));
         scrStats.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(UIConstants.BORDER_COLOR),
-                "So lieu thong ke", TitledBorder.LEFT, TitledBorder.TOP,
+                "Số liệu thống kê", TitledBorder.LEFT, TitledBorder.TOP,
                 UIConstants.FONT_BOLD, UIConstants.TABLE_HEADER_COLOR));
 
         // ── Histogram panel ──
@@ -101,7 +101,7 @@ public class ThongKeDiemDialog extends JDialog {
         pnlChart.setBackground(Color.WHITE);
         pnlChart.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(UIConstants.BORDER_COLOR),
-                "Pho diem", TitledBorder.LEFT, TitledBorder.TOP,
+                "Phổ điểm", TitledBorder.LEFT, TitledBorder.TOP,
                 UIConstants.FONT_BOLD, UIConstants.TABLE_HEADER_COLOR));
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrStats, pnlChart);
@@ -113,7 +113,7 @@ public class ThongKeDiemDialog extends JDialog {
         // ── Đóng ──
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pnlBtn.setOpaque(false);
-        CustomButton btnClose = new CustomButton("Dong", UIConstants.GRAY_COLOR);
+        CustomButton btnClose = new CustomButton("Đóng", UIConstants.GRAY_COLOR);
         btnClose.setPreferredSize(new Dimension(90, 34));
         btnClose.addActionListener(e -> dispose());
         pnlBtn.add(btnClose);
@@ -133,12 +133,12 @@ public class ThongKeDiemDialog extends JDialog {
 
         Stats stats = bus.getStats(pt, mon);
         statsModel.setRowCount(0);
-        statsModel.addRow(new Object[]{"So luong", stats.count});
-        statsModel.addRow(new Object[]{"Diem thap nhat", f(stats.min)});
-        statsModel.addRow(new Object[]{"Diem cao nhat",  f(stats.max)});
-        statsModel.addRow(new Object[]{"Trung binh",     f(stats.avg)});
-        statsModel.addRow(new Object[]{"Trung vi",       f(stats.median)});
-        statsModel.addRow(new Object[]{"Do lech chuan",  f(stats.stdDev)});
+        statsModel.addRow(new Object[]{"Số lượng", stats.count});
+        statsModel.addRow(new Object[]{"Điểm thấp nhất", f(stats.min)});
+        statsModel.addRow(new Object[]{"Điểm cao nhất",  f(stats.max)});
+        statsModel.addRow(new Object[]{"Trung bình",     f(stats.avg)});
+        statsModel.addRow(new Object[]{"Trung vị",       f(stats.median)});
+        statsModel.addRow(new Object[]{"Độ lệch chuẩn",  f(stats.stdDev)});
 
         buildHistogram(pt, mon);
     }
@@ -149,7 +149,7 @@ public class ThongKeDiemDialog extends JDialog {
         double[] values = bus.getRawValues(pt, mon);
 
         if (values.length < 2) {
-            JLabel lbl = new JLabel("Khong du du lieu de ve bieu do", SwingConstants.CENTER);
+            JLabel lbl = new JLabel("Không đủ dữ liệu để vẽ biểu đồ", SwingConstants.CENTER);
             lbl.setFont(UIConstants.FONT_NORMAL);
             pnlChart.add(lbl, BorderLayout.CENTER);
             pnlChart.revalidate(); pnlChart.repaint();
@@ -169,8 +169,8 @@ public class ThongKeDiemDialog extends JDialog {
         dataset.addSeries(mon, values, bins);
 
         JFreeChart chart = ChartFactory.createHistogram(
-                "Pho diem " + mon + " (" + pt + ")",
-                mon, "So thi sinh", dataset,
+                "Phổ điểm " + mon + " (" + pt + ")",
+                mon, "Số thí sinh", dataset,
                 PlotOrientation.VERTICAL, false, true, false);
         chart.getPlot().setBackgroundPaint(Color.WHITE);
         chart.setBackgroundPaint(Color.WHITE);
@@ -184,7 +184,7 @@ public class ThongKeDiemDialog extends JDialog {
 
     private void exportPng() {
         if (currentChart == null) {
-            JOptionPane.showMessageDialog(this, "Chua co bieu do!", "Thong bao", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Chưa có biểu đồ!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         JFileChooser fc = new JFileChooser();
@@ -192,9 +192,9 @@ public class ThongKeDiemDialog extends JDialog {
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 ChartUtils.saveChartAsPNG(fc.getSelectedFile(), currentChart, 800, 500);
-                JOptionPane.showMessageDialog(this, "Xuat anh thanh cong!", "OK", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Xuất ảnh thành công!", "OK", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Loi khi xuat: " + ex.getMessage(), "Loi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Lỗi khi xuất: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

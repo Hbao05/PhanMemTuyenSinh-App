@@ -19,7 +19,7 @@ public class ToHopDialog extends JDialog {
     private CustomTextField txtMaToHop, txtMon1, txtMon2, txtMon3, txtTenToHop;
 
     public ToHopDialog(Window parent, ToHopMonThi toHop, ToHopMonThiBUS bus) {
-        super(parent, toHop == null ? "Thêm Tổ Hợp Mới" : "Cập Nhật Tổ Hợp", ModalityType.APPLICATION_MODAL);
+        super(parent, toHop == null ? "Thêm tổ hợp mới" : "Cập nhật tổ hợp", ModalityType.APPLICATION_MODAL);
         this.bus = bus;
         this.toHop = toHop;
 

@@ -55,11 +55,11 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
         pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
-        JLabel lblTitle = new JLabel("BANG QUY DOI DIEM");
+        JLabel lblTitle = new JLabel("BẢNG QUY ĐỔI ĐIỂM");
         lblTitle.setFont(UIConstants.FONT_TITLE);
         lblTitle.setForeground(Color.WHITE);
 
-        lblTotalRecords = new JLabel("Dang tai...");
+        lblTotalRecords = new JLabel("Đang tải...");
         lblTotalRecords.setFont(UIConstants.FONT_NORMAL);
         lblTotalRecords.setForeground(UIConstants.PRIMARY_LIGHT);
 
@@ -73,13 +73,13 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
 
         JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlSearch.setOpaque(false);
-        JLabel lblSearch = new JLabel("Tim kiem:");
+        JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
         txtSearch = new CustomTextField(22);
         txtSearch.setPreferredSize(new Dimension(260, 36));
-        txtSearch.setToolTipText("Nhap ma quy doi, phuong thuc, to hop, mon");
-        btnSearch = new CustomButton("Tim",      UIConstants.PRIMARY_COLOR);
-        btnReset  = new CustomButton("Xoa loc",  UIConstants.GRAY_COLOR);
+        txtSearch.setToolTipText("Nhập mã quy đổi, phương thức, tổ hợp, môn");
+        btnSearch = new CustomButton("Tìm",      UIConstants.PRIMARY_COLOR);
+        btnReset  = new CustomButton("Xóa lọc",  UIConstants.GRAY_COLOR);
         btnSearch.setPreferredSize(new Dimension(90, 36));
         btnReset.setPreferredSize(new Dimension(110, 36));
         pnlSearch.add(lblSearch);
@@ -89,9 +89,9 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
 
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
-        btnAdd    = new CustomButton("+ Them",  UIConstants.SUCCESS_COLOR);
-        btnEdit   = new CustomButton("Sua",     UIConstants.PRIMARY_COLOR);
-        btnDelete = new CustomButton("Xoa",     UIConstants.DANGER_COLOR);
+        btnAdd    = new CustomButton("+ Thêm",  UIConstants.SUCCESS_COLOR);
+        btnEdit   = new CustomButton("Sửa",     UIConstants.PRIMARY_COLOR);
+        btnDelete = new CustomButton("Xóa",     UIConstants.DANGER_COLOR);
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
@@ -114,8 +114,8 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
 
     // ── TABLE ────────────────────────────────────────────────────────────
     private void buildTable() {
-        String[] cols = {"ID", "Ma QD", "Phuong Thuc", "To Hop", "Mon",
-                         "Diem A", "Diem B", "Diem C", "Diem D", "Pham Vi"};
+        String[] cols = {"ID", "Mã QĐ", "Phương thức", "Tổ hợp", "Môn",
+                         "Điểm A", "Điểm B", "Điểm C", "Điểm D", "Phạm vi"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override public Class<?> getColumnClass(int c) {
@@ -158,12 +158,12 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
 
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
-        btnPrev = new CustomButton("< Truoc", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
-        btnNext = new CustomButton("Sau >", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
         pnlPaging.add(btnPrev);
         pnlPaging.add(lblPageInfo);
@@ -205,15 +205,15 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
             BangQuyDoi bqd = getSelected();
             if (bqd == null) return;
             int ok = JOptionPane.showConfirmDialog(this,
-                    "Xoa ban ghi \"" + bqd.getMaQuyDoi() + "\"?",
-                    "Xac nhan xoa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Xóa bản ghi \"" + bqd.getMaQuyDoi() + "\"?",
+                    "Xác nhận xóa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (ok == JOptionPane.YES_OPTION) {
                 String result = bus.deleteBangQuyDoi(bqd.getIdQd());
                 if (result.startsWith("Success")) {
                     if (tableModel.getRowCount() == 1 && currentPage > 1) currentPage--;
                     loadData();
                 } else {
-                    JOptionPane.showMessageDialog(this, result, "Loi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -248,11 +248,11 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
         if (currentKeyword.isEmpty()) {
             list       = bus.getList(currentPage);
             totalPages = bus.calculateTotalPages();
-            lblTotalRecords.setText("Tong: " + bus.getTotalCount() + " ban ghi");
+            lblTotalRecords.setText("Tổng: " + bus.getTotalCount() + " bản ghi");
         } else {
             list       = bus.search(currentPage, currentKeyword);
             totalPages = bus.calculateSearchTotalPages(currentKeyword);
-            lblTotalRecords.setText("Ket qua: " + bus.getSearchCount(currentKeyword) + " ban ghi");
+            lblTotalRecords.setText("Kết quả: " + bus.getSearchCount(currentKeyword) + " bản ghi");
         }
 
         lblPageInfo.setText("Trang " + currentPage + " / " + totalPages);
@@ -280,7 +280,7 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
     private BangQuyDoi getSelected() {
         int row = tblData.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui long chon mot ban ghi!", "Chua chon",
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản ghi!", "Chưa chọn",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }

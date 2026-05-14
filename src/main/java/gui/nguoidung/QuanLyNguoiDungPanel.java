@@ -79,7 +79,7 @@ public class QuanLyNguoiDungPanel extends JPanel {
         txtSearch.setToolTipText("Nhập username hoặc họ tên");
         btnSearch = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
         btnSearch.setPreferredSize(new Dimension(90, 36));
-        btnReset = new CustomButton("Xoa loc", UIConstants.GRAY_COLOR);
+        btnReset = new CustomButton("Xóa lọc", UIConstants.GRAY_COLOR);
         btnReset.setPreferredSize(new Dimension(110, 36));
         pnlSearch.add(lblSearch);
         pnlSearch.add(txtSearch);
@@ -90,11 +90,11 @@ public class QuanLyNguoiDungPanel extends JPanel {
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
         btnAdd          = new CustomButton("+ Thêm",      UIConstants.SUCCESS_COLOR);
-        btnEdit         = new CustomButton("Sua",          UIConstants.PRIMARY_COLOR);
-        btnChangePass   = new CustomButton("Doi MK",       UIConstants.WARNING_COLOR);
-        btnToggleRole   = new CustomButton("Doi quyen",    UIConstants.TEAL_COLOR);
-        btnToggleActive = new CustomButton("En/Disable",   UIConstants.PURPLE_COLOR);
-        btnDelete       = new CustomButton("Xoa",          UIConstants.DANGER_COLOR);
+        btnEdit         = new CustomButton("Sửa",          UIConstants.PRIMARY_COLOR);
+        btnChangePass   = new CustomButton("Đổi MK",       UIConstants.WARNING_COLOR);
+        btnToggleRole   = new CustomButton("Đổi quyền",    UIConstants.TEAL_COLOR);
+        btnToggleActive = new CustomButton("Bật/Tắt",   UIConstants.PURPLE_COLOR);
+        btnDelete       = new CustomButton("Xóa",          UIConstants.DANGER_COLOR);
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnChangePass, btnToggleRole, btnToggleActive, btnDelete}) {
             b.setPreferredSize(new Dimension(130, 36));
             pnlActions.add(b);
@@ -184,12 +184,12 @@ public class QuanLyNguoiDungPanel extends JPanel {
 
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
-        btnPrev = new CustomButton("◀ Trước", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
-        btnNext = new CustomButton("Sau ▶", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
         pnlPaging.add(btnPrev);
         pnlPaging.add(lblPageInfo);

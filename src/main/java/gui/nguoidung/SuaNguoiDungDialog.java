@@ -80,7 +80,7 @@ public class SuaNguoiDungDialog extends JDialog {
 
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Luu",  UIConstants.SUCCESS_COLOR);
+        CustomButton btnSave   = new CustomButton("Lưu",  UIConstants.SUCCESS_COLOR);
         CustomButton btnCancel = new CustomButton("Hủy",     UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(110, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));

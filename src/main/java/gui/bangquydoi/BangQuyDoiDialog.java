@@ -24,7 +24,7 @@ public class BangQuyDoiDialog extends JDialog {
 
     public BangQuyDoiDialog(Window parent, BangQuyDoi target, BangQuyDoiBUS bus) {
         super(parent,
-              target == null ? "Them moi Bang Quy Doi" : "Sua Bang Quy Doi",
+              target == null ? "Thêm mới bảng quy đổi" : "Sửa bảng quy đổi",
               ModalityType.APPLICATION_MODAL);
         this.bus    = bus;
         this.target = target;
@@ -42,7 +42,7 @@ public class BangQuyDoiDialog extends JDialog {
 
         // Header
         JLabel lblTitle = new JLabel(
-                target == null ? "THEM MOI BANG QUY DOI" : "SUA BANG QUY DOI",
+                target == null ? "THÊM MỚI BẢNG QUY ĐỔI" : "SỬA BẢNG QUY ĐỔI",
                 SwingConstants.CENTER);
         lblTitle.setFont(UIConstants.FONT_HEADER);
         lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
@@ -68,15 +68,15 @@ public class BangQuyDoiDialog extends JDialog {
         txtDiemD     = makeDoubleField();
 
         Object[][] rows = {
-            {"Ma Quy Doi *",   txtMaQuyDoi},
-            {"Phuong Thuc *",  txtPhuongThuc},
-            {"To Hop",         txtToHop},
-            {"Mon",            txtMon},
-            {"Pham Vi",        txtPhanVi},
-            {"Diem A",         txtDiemA},
-            {"Diem B",         txtDiemB},
-            {"Diem C",         txtDiemC},
-            {"Diem D",         txtDiemD},
+            {"Mã quy đổi *",   txtMaQuyDoi},
+            {"Phương thức *",  txtPhuongThuc},
+            {"Tổ hợp",         txtToHop},
+            {"Môn",            txtMon},
+            {"Phạm vi",        txtPhanVi},
+            {"Điểm A",         txtDiemA},
+            {"Điểm B",         txtDiemB},
+            {"Điểm C",         txtDiemC},
+            {"Điểm D",         txtDiemD},
         };
 
         for (int i = 0; i < rows.length; i++) {
@@ -94,8 +94,8 @@ public class BangQuyDoiDialog extends JDialog {
         // Buttons
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Luu",  UIConstants.SUCCESS_COLOR);
-        CustomButton btnCancel = new CustomButton("Huy",  UIConstants.GRAY_COLOR);
+        CustomButton btnSave   = new CustomButton("Lưu",  UIConstants.SUCCESS_COLOR);
+        CustomButton btnCancel = new CustomButton("Hủy",  UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(110, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));
         btnSave.addActionListener(e -> doSave());
@@ -145,13 +145,13 @@ public class BangQuyDoiDialog extends JDialog {
 
         if (result.startsWith("Success")) {
             JOptionPane.showMessageDialog(this,
-                    target == null ? "Them moi thanh cong!" : "Cap nhat thanh cong!",
-                    "Thong bao", JOptionPane.INFORMATION_MESSAGE);
+                    target == null ? "Thêm mới thành công!" : "Cập nhật thành công!",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             saved = true;
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result.replace("Error: ", ""),
-                    "Loi", JOptionPane.ERROR_MESSAGE);
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

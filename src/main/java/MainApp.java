@@ -1,4 +1,5 @@
 import gui.MainFrame;
+import gui.auth.LoginFrame;
 
 import javax.swing.*;
 
@@ -16,5 +17,11 @@ public class MainApp {
             MainFrame mainFrame = new MainFrame();
             mainFrame.setVisible(true);
         });
+//        SwingUtilities.invokeLater(() -> {
+//            try {
+//                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+//            } catch (Exception ignored) {}
+//            new LoginFrame().setVisible(true);
+//        });
     }
 }

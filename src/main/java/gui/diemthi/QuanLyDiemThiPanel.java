@@ -56,11 +56,11 @@ public class QuanLyDiemThiPanel extends JPanel {
         pnlHeader.setBackground(UIConstants.PRIMARY_COLOR);
         pnlHeader.setBorder(new EmptyBorder(14, 20, 14, 20));
 
-        JLabel lblTitle = new JLabel("QUAN LY DIEM THI");
+        JLabel lblTitle = new JLabel("QUẢN LÝ ĐIỂM THI");
         lblTitle.setFont(UIConstants.FONT_TITLE);
         lblTitle.setForeground(Color.WHITE);
 
-        lblTotalRecords = new JLabel("Dang tai...");
+        lblTotalRecords = new JLabel("Đang tải...");
         lblTotalRecords.setFont(UIConstants.FONT_NORMAL);
         lblTotalRecords.setForeground(UIConstants.PRIMARY_LIGHT);
 
@@ -76,18 +76,18 @@ public class QuanLyDiemThiPanel extends JPanel {
 
         JLabel lblFilter = new JLabel("Loai:");
         lblFilter.setFont(UIConstants.FONT_BOLD);
-        cboFilter = new JComboBox<>(new String[]{"Tat ca", "THPT", "VSAT", "DGNL"});
+        cboFilter = new JComboBox<>(new String[]{"Tất cả", "THPT", "VSAT", "DGNL"});
         cboFilter.setFont(UIConstants.FONT_NORMAL);
         cboFilter.setPreferredSize(new Dimension(100, 36));
 
-        JLabel lblSearch = new JLabel("Tim kiem:");
+        JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
         txtSearch = new CustomTextField(18);
         txtSearch.setPreferredSize(new Dimension(200, 36));
-        txtSearch.setToolTipText("Nhap CCCD hoac so bao danh");
-        btnSearch   = new CustomButton("Tim",      UIConstants.PRIMARY_COLOR);
-        btnReset    = new CustomButton("Xoa loc",  UIConstants.GRAY_COLOR);
-        btnThongKe  = new CustomButton("Thong ke", new Color(124, 58, 237));
+        txtSearch.setToolTipText("Nhập CCCD hoặc số báo danh");
+        btnSearch   = new CustomButton("Tìm",      UIConstants.PRIMARY_COLOR);
+        btnReset    = new CustomButton("Xóa lọc",  UIConstants.GRAY_COLOR);
+        btnThongKe  = new CustomButton("Thống kê", new Color(124, 58, 237));
         btnSearch.setPreferredSize(new Dimension(80, 36));
         btnReset.setPreferredSize(new Dimension(100, 36));
         btnThongKe.setPreferredSize(new Dimension(110, 36));
@@ -101,9 +101,9 @@ public class QuanLyDiemThiPanel extends JPanel {
 
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
-        btnAdd    = new CustomButton("+ Them", UIConstants.SUCCESS_COLOR);
-        btnEdit   = new CustomButton("Sua",    UIConstants.PRIMARY_COLOR);
-        btnDelete = new CustomButton("Xoa",    UIConstants.DANGER_COLOR);
+        btnAdd    = new CustomButton("+ Thêm", UIConstants.SUCCESS_COLOR);
+        btnEdit   = new CustomButton("Sửa",    UIConstants.PRIMARY_COLOR);
+        btnDelete = new CustomButton("Xóa",    UIConstants.DANGER_COLOR);
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
@@ -194,12 +194,12 @@ public class QuanLyDiemThiPanel extends JPanel {
 
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         pnlPaging.setOpaque(false);
-        btnPrev = new CustomButton("< Truoc", UIConstants.PRIMARY_COLOR);
+        btnPrev = new CustomButton("Trước", UIConstants.PRIMARY_COLOR);
         btnPrev.setPreferredSize(new Dimension(105, 32));
         lblPageInfo = new JLabel("Trang 1 / 1");
         lblPageInfo.setFont(UIConstants.FONT_BOLD);
         lblPageInfo.setForeground(UIConstants.TABLE_HEADER_COLOR);
-        btnNext = new CustomButton("Sau >", UIConstants.PRIMARY_COLOR);
+        btnNext = new CustomButton("Sau", UIConstants.PRIMARY_COLOR);
         btnNext.setPreferredSize(new Dimension(105, 32));
         pnlPaging.add(btnPrev); pnlPaging.add(lblPageInfo); pnlPaging.add(btnNext);
 
@@ -211,7 +211,7 @@ public class QuanLyDiemThiPanel extends JPanel {
     private void setupEvents() {
         cboFilter.addActionListener(e -> {
             String sel = (String) cboFilter.getSelectedItem();
-            currentFilter = "Tat ca".equals(sel) ? "" : sel;
+            currentFilter = "Tất cả".equals(sel) ? "" : sel;
             buildTableForFilter(currentFilter);
             currentPage    = 1;
             currentKeyword = "";
@@ -243,15 +243,15 @@ public class QuanLyDiemThiPanel extends JPanel {
             DiemThiXetTuyen dt = getSelected();
             if (dt == null) return;
             int ok = JOptionPane.showConfirmDialog(this,
-                    "Xoa ban ghi diem thi cua CCCD \"" + dt.getCccd() + "\"?",
-                    "Xac nhan xoa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Xóa bản ghi điểm thi của CCCD \"" + dt.getCccd() + "\"?",
+                    "Xác nhận xóa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (ok == JOptionPane.YES_OPTION) {
                 String result = bus.deleteDiemThi(dt.getIdDiemThi());
                 if (result.startsWith("Success")) {
                     if (tableModel.getRowCount() == 1 && currentPage > 1) currentPage--;
                     loadData();
                 } else {
-                    JOptionPane.showMessageDialog(this, result, "Loi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -284,11 +284,11 @@ public class QuanLyDiemThiPanel extends JPanel {
         if (currentKeyword.isEmpty()) {
             list       = bus.getList(currentPage, currentFilter);
             totalPages = bus.calculateTotalPages(currentFilter);
-            lblTotalRecords.setText("Tong: " + bus.getTotalCount(currentFilter) + " ban ghi");
+            lblTotalRecords.setText("Tổng: " + bus.getTotalCount(currentFilter) + " bản ghi");
         } else {
             list       = bus.search(currentPage, currentKeyword, currentFilter);
             totalPages = bus.calculateSearchTotalPages(currentKeyword, currentFilter);
-            lblTotalRecords.setText("Ket qua: " + bus.getSearchCount(currentKeyword, currentFilter) + " ban ghi");
+            lblTotalRecords.setText("Kết quả: " + bus.getSearchCount(currentKeyword, currentFilter) + " bản ghi");
         }
 
         lblPageInfo.setText("Trang " + currentPage + " / " + totalPages);
@@ -319,7 +319,7 @@ public class QuanLyDiemThiPanel extends JPanel {
     private DiemThiXetTuyen getSelected() {
         int row = tblData.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui long chon mot ban ghi!", "Chua chon",
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản ghi!", "Chưa chọn",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }
