@@ -118,4 +118,12 @@ public class NganhToHopBUS {
 
         return String.format("Import hoàn tất!\n- Thêm mới thành công: %d liên kết Ngành-Tổ hợp.\n- Bỏ qua (trùng / lỗi): %d dòng.", added, skipped);
     }
+
+    public List<NganhToHop> getByMaNganh(String maNganh) {
+        return dao.getByMaNganh(maNganh);
+    }
+
+    public NganhToHop getByKeys(String maNganh, String maToHop) {
+        return dao.getByKeys(maNganh, maToHop);
+    }
 }

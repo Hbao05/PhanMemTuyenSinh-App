@@ -139,4 +139,26 @@ public class NganhToHopDAO {
             return null;
         }
     }
+
+    public List<NganhToHop> getByMaNganh(String maNganh) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM NganhToHop n WHERE n.maNganh = :mn ORDER BY n.maToHop", NganhToHop.class)
+                    .setParameter("mn", maNganh).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
+    public NganhToHop getByKeys(String maNganh, String maToHop) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM NganhToHop n WHERE n.maNganh = :mn AND n.maToHop = :th", NganhToHop.class)
+                    .setParameter("mn", maNganh).setParameter("th", maToHop).uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

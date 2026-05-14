@@ -136,6 +136,10 @@ public class ThiSinhBUS {
                 : "Error: Không thể xóa. Thí sinh có thể đã bị liên kết dữ liệu.";
     }
 
+    public ThiSinh getByCccd(String cccd) {
+        return thiSinhDAO.getByCccd(cccd);
+    }
+
     /** Snapshot CCCD trong DB — dùng làm cache cho import Excel nhiều lô (tránh query lặp). */
     public Set<String> newImportCccdCache() {
         return thiSinhDAO.getAllCccd();
