@@ -12,8 +12,10 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
 
 public class QuanLyDiemCongPanel extends JPanel {
@@ -22,7 +24,7 @@ public class QuanLyDiemCongPanel extends JPanel {
 
     private CustomTextField txtSearch;
     private CustomButton    btnSearch, btnReset;
-    private CustomButton    btnAdd, btnEdit, btnDelete;
+    private CustomButton    btnImport, btnAdd, btnEdit, btnDelete;
 
     private CustomTable       tblData;
     private DefaultTableModel tableModel;
@@ -88,10 +90,11 @@ public class QuanLyDiemCongPanel extends JPanel {
 
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
+        btnImport     = new CustomButton("Import",   UIConstants.TEAL_COLOR);
         btnAdd    = new CustomButton("+ Thêm", UIConstants.SUCCESS_COLOR);
         btnEdit   = new CustomButton("Sửa",    UIConstants.PRIMARY_COLOR);
         btnDelete = new CustomButton("Xóa",    UIConstants.DANGER_COLOR);
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete}) {
+        for (CustomButton b : new CustomButton[]{btnImport, btnAdd, btnEdit, btnDelete}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
         }
@@ -185,6 +188,8 @@ public class QuanLyDiemCongPanel extends JPanel {
         btnPrev.addActionListener(e -> { if (currentPage > 1)         { currentPage--; loadData(); } });
         btnNext.addActionListener(e -> { if (currentPage < totalPages) { currentPage++; loadData(); } });
 
+        btnImport.addActionListener(e -> doImportExcel());
+
         btnAdd.addActionListener(e -> {
             DiemCongDialog dlg = new DiemCongDialog(getParentWindow(), null, bus);
             dlg.setVisible(true);
@@ -234,6 +239,81 @@ public class QuanLyDiemCongPanel extends JPanel {
         currentKeyword = txtSearch.getText().trim();
         currentPage    = 1;
         loadData();
+    }
+
+    private void doImportExcel() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Chọn file Excel điểm cộng (.xlsx)");
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            
+            JDialog progressDialog = new JDialog(getParentWindow(), "Đang import...", Dialog.ModalityType.APPLICATION_MODAL);
+            progressDialog.setSize(400, 150);
+            progressDialog.setLocationRelativeTo(this);
+            progressDialog.setLayout(new BorderLayout(10, 10));
+            
+            JLabel lblStatus = new JLabel("Đang chuẩn bị đọc file...", SwingConstants.CENTER);
+            lblStatus.setFont(UIConstants.FONT_NORMAL);
+            lblStatus.setBorder(new EmptyBorder(10, 10, 0, 10));
+            
+            JProgressBar progressBar = new JProgressBar();
+            progressBar.setIndeterminate(true);
+            progressBar.setStringPainted(true);
+            progressBar.setString("Đang xử lý...");
+            
+            JPanel centerPanel = new JPanel(new BorderLayout());
+            centerPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
+            centerPanel.add(progressBar, BorderLayout.CENTER);
+            
+            progressDialog.add(lblStatus, BorderLayout.NORTH);
+            progressDialog.add(centerPanel, BorderLayout.CENTER);
+            
+            SwingWorker<Void, String> worker = new SwingWorker<>() {
+                private int finalSuccess = 0;
+                private int finalTotal = 0;
+                private String errorMessage = null;
+
+                @Override
+                protected Void doInBackground() {
+                    bus.importFromExcel(file, (processed, success, message) -> {
+                        finalTotal = processed;
+                        finalSuccess = success;
+                        if (message.startsWith("Lỗi")) {
+                            errorMessage = message;
+                        }
+                        publish("Đã đọc: " + processed + " | Thành công: " + success + " (" + message + ")");
+                    });
+                    return null;
+                }
+
+                @Override
+                protected void process(List<String> chunks) {
+                    if (!chunks.isEmpty()) {
+                        String latestMessage = chunks.get(chunks.size() - 1);
+                        lblStatus.setText(latestMessage);
+                        progressBar.setString(latestMessage);
+                    }
+                }
+
+                @Override
+                protected void done() {
+                    progressDialog.dispose();
+                    if (errorMessage != null) {
+                        JOptionPane.showMessageDialog(QuanLyDiemCongPanel.this, errorMessage, "Lỗi Import", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(QuanLyDiemCongPanel.this, 
+                            "Import thành công!\nTổng dòng đã đọc: " + finalTotal + "\nSố dòng thêm/cập nhật: " + finalSuccess, 
+                            "Hoàn thành", JOptionPane.INFORMATION_MESSAGE);
+                        currentPage = 1;
+                        loadData();
+                    }
+                }
+            };
+            
+            worker.execute();
+            progressDialog.setVisible(true); // Blocks until disposed
+        }
     }
 
     // ── LOAD DATA ────────────────────────────────────────────────────────

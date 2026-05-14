@@ -5,7 +5,17 @@ import dao.NganhDAO;
 import dao.ThiSinhDAO;
 import entity.DiemCongXetTuyen;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import com.github.pjfanning.xlsx.StreamingReader;
 
 public class DiemCongBUS {
 
@@ -118,5 +128,107 @@ public class DiemCongBUS {
         String toHop = dc.getMaToHop()    != null ? dc.getMaToHop()    : "";
         String pt    = dc.getPhuongThuc() != null ? dc.getPhuongThuc() : "";
         dc.setDcKeys(dc.getCccd() + "|" + dc.getMaNganh() + "|" + toHop + "|" + pt);
+    }
+
+    // ── IMPORT EXCEL ─────────────────────────────────────
+    public interface ProgressCallback {
+        void onProgress(int processed, int success, String message);
+    }
+
+    public void importFromExcel(File file, ProgressCallback callback) {
+        int batchSize = 5000;
+        List<DiemCongXetTuyen> batch = new ArrayList<>(batchSize);
+        int totalProcessed = 0;
+        int totalSuccess = 0;
+        
+        try (InputStream is = new FileInputStream(file);
+             Workbook workbook = StreamingReader.builder()
+                     .rowCacheSize(100)
+                     .bufferSize(4096)
+                     .open(is)) {
+            
+            for (Sheet sheet : workbook) {
+                for (Row row : sheet) {
+                    if (row.getRowNum() == 0) continue; // Skip header
+
+                    try {
+                        String cccd = getCellValue(row.getCell(0));
+                        if (cccd == null || cccd.isBlank()) continue;
+                        
+                        DiemCongXetTuyen dc = new DiemCongXetTuyen();
+                        dc.setCccd(cccd.trim());
+                        dc.setMaNganh(getCellValue(row.getCell(1)));
+                        dc.setMaToHop(getCellValue(row.getCell(2)));
+                        
+                        String diemCCStr = getCellValue(row.getCell(3));
+                        if (diemCCStr != null && !diemCCStr.isBlank()) {
+                            dc.setDiemCc(Double.parseDouble(diemCCStr));
+                        }
+                        
+                        dc.setPhuongThuc(getCellValue(row.getCell(4)));
+                        
+                        String diemUtStr = getCellValue(row.getCell(5));
+                        if (diemUtStr != null && !diemUtStr.isBlank()) {
+                            dc.setDiemUtXt(Double.parseDouble(diemUtStr));
+                        }
+                        
+                        String diemTongStr = getCellValue(row.getCell(6));
+                        if (diemTongStr != null && !diemTongStr.isBlank()) {
+                            dc.setDiemTong(Double.parseDouble(diemTongStr));
+                        }
+                        
+                        autoFill(dc); // Generate keys & calculate max totals
+                        
+                        batch.add(dc);
+                        totalProcessed++;
+                        
+                        if (batch.size() >= batchSize) {
+                            int success = dao.batchInsert(batch);
+                            totalSuccess += success;
+                            batch.clear();
+                            if (callback != null) {
+                                callback.onProgress(totalProcessed, totalSuccess, "Đang xử lý...");
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.err.println("Lỗi dòng " + row.getRowNum() + ": " + ex.getMessage());
+                    }
+                }
+            }
+            
+            if (!batch.isEmpty()) {
+                int success = dao.batchInsert(batch);
+                totalSuccess += success;
+                if (callback != null) {
+                    callback.onProgress(totalProcessed, totalSuccess, "Đang xử lý...");
+                }
+            }
+            
+            if (callback != null) {
+                callback.onProgress(totalProcessed, totalSuccess, "Hoàn thành!");
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (callback != null) {
+                callback.onProgress(totalProcessed, totalSuccess, "Lỗi: " + e.getMessage());
+            }
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING: return cell.getStringCellValue().trim();
+            case NUMERIC: 
+                double val = cell.getNumericCellValue();
+                if (val == (long) val) {
+                    return String.format("%d", (long) val);
+                } else {
+                    return String.valueOf(val);
+                }
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default: return "";
+        }
     }
 }
