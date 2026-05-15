@@ -1,8 +1,6 @@
 package gui.thisinh;
 
 import bus.ThiSinhBUS;
-import entity.DoiTuong;
-import entity.KhuVuc;
 import entity.ThiSinh;
 import gui.component.CustomButton;
 import gui.component.CustomComboBox;
@@ -131,8 +129,8 @@ public class ThemThiSinhDialog extends JDialog {
         ts.setNoiSinh(txtNoiSinh.getText().trim());
         ts.setDienThoai(txtDienThoai.getText().trim());
         ts.setEmail(txtEmail.getText().trim());
-        ts.setDoiTuong(DoiTuong.fromMa(txtDoiTuong.getText().trim()));
-        ts.setKhuVuc(KhuVuc.fromMa(txtKhuVuc.getText().trim()));
+        ts.setDoiTuong(txtDoiTuong.getText().trim());
+        ts.setKhuVuc(txtKhuVuc.getText().trim());
         ts.setUpdatedAt(LocalDate.now());
 
         // Gọi BUS xử lý nghiệp vụ

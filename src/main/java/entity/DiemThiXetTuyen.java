@@ -71,8 +71,8 @@ public class DiemThiXetTuyen {
     @Column(name = "NK2")
     private Double nk2;
 
-    // Quan hệ tới ThiSinh
-    @ManyToOne(fetch = FetchType.LAZY)
+    // ── Quan hệ: DiemThiXetTuyen N-1 ThiSinh (theo cccd) ──
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
     private ThiSinh thiSinh;
 }

@@ -119,6 +119,16 @@ public class ThiSinhDAO {
         }
     }
 
+    public ThiSinh getByCccd(String cccd) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
+                    .setParameter("cccd", cccd).uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public boolean delete(int id) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {

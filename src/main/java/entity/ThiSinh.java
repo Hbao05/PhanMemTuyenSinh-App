@@ -10,7 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="xt_thisinhxettuyen25")
+@Table(name = "xt_thisinhxettuyen25")
 public class ThiSinh {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,10 +51,10 @@ public class ThiSinh {
     private LocalDate updatedAt;
 
     @Column(name = "doi_tuong")
-    private DoiTuong doiTuong;
+    private String doiTuong;
 
     @Column(name = "khu_vuc")
-    private KhuVuc khuVuc;
+    private String khuVuc;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
