@@ -23,7 +23,7 @@ public class DiemThiXetTuyen {
     @Column(name = "d_phuongthuc")
     private String phuongThuc;
 
-    @Column(name = "TO")
+    @Column(name = "`TO`")
     private Double diemToan;
 
     @Column(name = "LI")

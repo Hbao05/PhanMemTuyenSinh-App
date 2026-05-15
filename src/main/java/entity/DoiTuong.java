@@ -29,11 +29,10 @@ public enum DoiTuong {
 
     public static DoiTuong fromMa(String ma) {
         for (DoiTuong dt : values()) {
-            if (dt.ma.equals(ma)) {
+            if (dt.ma.equals(ma) || dt.name().equalsIgnoreCase(ma)) {
                 return dt;
             }
         }
-
-        throw new IllegalArgumentException("Mã đối tượng không hợp lệ: " + ma);
+        return null; // fallback to null instead of throwing exception to prevent DB fetch crash
     }
 }

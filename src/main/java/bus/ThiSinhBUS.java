@@ -143,4 +143,11 @@ public class ThiSinhBUS {
                 successCount, duplicateCount, failedToInsertCount);
     }
 
+    public List<Object[]> countByDoiTuong() {
+        return thiSinhDAO.countByDoiTuong();
+    }
+
+    public List<Object[]> countByKhuVuc() {
+        return thiSinhDAO.countByKhuVuc();
+    }
 }

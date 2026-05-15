@@ -161,4 +161,24 @@ public class ThiSinhDAO {
         }
         return successCount;
     }
+
+    public List<Object[]> countByDoiTuong() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT t.doiTuong, COUNT(t) FROM ThiSinh t GROUP BY t.doiTuong";
+            return session.createQuery(hql, Object[].class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public List<Object[]> countByKhuVuc() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT t.khuVuc, COUNT(t) FROM ThiSinh t GROUP BY t.khuVuc";
+            return session.createQuery(hql, Object[].class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

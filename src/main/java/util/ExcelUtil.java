@@ -31,49 +31,50 @@ public class ExcelUtil {
             int lastRowNum = sheet.getLastRowNum();
 
             // Bỏ qua dòng 0 (dòng tiêu đề STT, CCCD...), bắt đầu từ dòng 1
-            int importLimit = 10000; // Giới hạn test, đổi thành lastRowNum để import toàn bộ
-            for (int i = 1; i <= Math.min(lastRowNum, importLimit); i++) {
+            for (int i = 1; i <= lastRowNum; i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue; // Bỏ qua dòng trống
 
-                // 1. Đọc dữ liệu thô từ các cột (Chỉ lấy đúng 7 cột đầu và cột Nơi sinh)
-                String cccd = dataFormatter.formatCellValue(row.getCell(1)).trim();
-                String fullName = dataFormatter.formatCellValue(row.getCell(2)).trim();
+                // 1. Đọc dữ liệu từ các cột
+                String cccd = dataFormatter.formatCellValue(row.getCell(0)).trim();
+                String soBaoDanh = dataFormatter.formatCellValue(row.getCell(1)).trim();
+                String ho = dataFormatter.formatCellValue(row.getCell(2)).trim();
+                String ten = dataFormatter.formatCellValue(row.getCell(3)).trim();
 
-                // Nếu không có CCCD thì coi như dòng đó rác, bỏ qua luôn để tiết kiệm bộ nhớ
+                // Nếu không có CCCD thì coi như dòng đó rác, bỏ qua luôn
                 if (cccd.isEmpty()) continue;
 
-                String dob = dataFormatter.formatCellValue(row.getCell(3)).trim();
-                String gender = dataFormatter.formatCellValue(row.getCell(4)).trim();
-                String priorityObj = dataFormatter.formatCellValue(row.getCell(5)).trim();
-                String priorityZone = dataFormatter.formatCellValue(row.getCell(6)).trim();
-                String birthPlace = dataFormatter.formatCellValue(row.getCell(35)).trim(); // Cột 35 là Nơi sin
-                // 2. Thuật toán tách Họ và Tên
-                String ho = "";
-                String ten = "";
-                if (!fullName.isEmpty()) {
-                    int lastSpaceIndex = fullName.lastIndexOf(" ");
-                    if (lastSpaceIndex == -1) {
-                        // Trường hợp dữ liệu test như "TS_0001" (Không có dấu cách)
-                        ten = fullName;
-                    } else {
-                        // Cắt từ đầu đến khoảng trắng cuối cùng làm Họ
-                        ho = fullName.substring(0, lastSpaceIndex).trim();
-                        // Cắt từ sau khoảng trắng cuối cùng đến hết làm Tên
-                        ten = fullName.substring(lastSpaceIndex + 1).trim();
-                    }
-                }
+                String dob = dataFormatter.formatCellValue(row.getCell(4)).trim();
+                String dienThoai = dataFormatter.formatCellValue(row.getCell(5)).trim();
+                String gender = dataFormatter.formatCellValue(row.getCell(6)).trim();
+                String email = dataFormatter.formatCellValue(row.getCell(7)).trim();
+                String birthPlace = dataFormatter.formatCellValue(row.getCell(8)).trim();
+                String priorityObj = dataFormatter.formatCellValue(row.getCell(9)).trim();
+                String priorityZone = dataFormatter.formatCellValue(row.getCell(10)).trim();
 
                 // 3. Đóng gói vào đối tượng ThiSinh
                 ThiSinh ts = new ThiSinh();
                 ts.setCccd(cccd);
+                ts.setSoBaoDanh(soBaoDanh);
                 ts.setHo(ho);
                 ts.setTen(ten);
                 ts.setNgaySinh(dob);
+                ts.setDienThoai(dienThoai);
                 ts.setGioiTinh(gender);
-                ts.setDoiTuong(DoiTuong.fromMa(priorityObj));
-                ts.setKhuVuc(KhuVuc.fromMa(priorityZone));
+                ts.setEmail(email);
                 ts.setNoiSinh(birthPlace);
+                
+                try {
+                    ts.setDoiTuong(priorityObj.isEmpty() ? null : DoiTuong.fromMa(priorityObj));
+                } catch (IllegalArgumentException e) {
+                    ts.setDoiTuong(null);
+                }
+                
+                try {
+                    ts.setKhuVuc(priorityZone.isEmpty() ? null : KhuVuc.fromMa(priorityZone));
+                } catch (IllegalArgumentException e) {
+                    ts.setKhuVuc(null);
+                }
 
                 // 4. Thêm vào danh sách (RAM)
                 candidateList.add(ts);

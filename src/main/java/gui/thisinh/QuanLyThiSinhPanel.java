@@ -27,7 +27,7 @@ public class QuanLyThiSinhPanel extends JPanel {
     private CustomButton btnSearch, btnReset;
 
     // Các nút chức năng
-    private CustomButton btnAdd, btnEdit, btnDelete, btnImport, btnViewDetail;
+    private CustomButton btnAdd, btnEdit, btnDelete, btnImport, btnStatistic;
 
     // Bảng dữ liệu
     private CustomTable tblCandidates;
@@ -117,10 +117,10 @@ public class QuanLyThiSinhPanel extends JPanel {
         btnAdd        = new CustomButton("+ Thêm mới",   UIConstants.SUCCESS_COLOR);
         btnEdit       = new CustomButton("✎ Sửa",        UIConstants.PRIMARY_COLOR);
         btnDelete     = new CustomButton("🗑 Xóa",       UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("👁 Chi tiết",  new Color(142, 68, 173));
+        btnStatistic  = new CustomButton("📊 Thống kê",  new Color(142, 68, 173));
         btnImport     = new CustomButton("⬆ Import",    new Color(22, 160, 133));
 
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
+        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnStatistic, btnImport}) {
             b.setPreferredSize(new Dimension(120, 36));
             pnlActions.add(b);
         }
@@ -300,18 +300,8 @@ public class QuanLyThiSinhPanel extends JPanel {
             }
         });
 
-        // Xem chi tiết
-        btnViewDetail.addActionListener(e -> {
-            int row = tblCandidates.getSelectedRow();
-            if (row < 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Vui lòng chọn thí sinh để xem chi tiết!", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            int id = (int) tblCandidates.getValueAt(row, 0);
-            ThiSinh ts = candidateBUS.getCandidate(id);
-            if (ts != null) showDetailDialog(ts);
-        });
+        // Thống kê
+        btnStatistic.addActionListener(e -> showStatisticDialog());
 
         // Double-click mở chi tiết
         tblCandidates.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -376,8 +366,8 @@ public class QuanLyThiSinhPanel extends JPanel {
                         ts.getTen(),
                         ts.getNgaySinh(),
                         ts.getGioiTinh(),
-                        ts.getKhuVuc(),
-                        ts.getDoiTuong()
+                        ts.getKhuVuc() != null ? ts.getKhuVuc().getMa() : "—",
+                        ts.getDoiTuong() != null ? ts.getDoiTuong().getMa() : "—"
                 });
             }
         }
@@ -501,5 +491,90 @@ public class QuanLyThiSinhPanel extends JPanel {
         };
         worker.execute();
         loadingDialog.setVisible(true);
+    }
+
+    /** Dialog Thống Kê Thí Sinh */
+    private void showStatisticDialog() {
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
+                "Thống kê Thí sinh", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIConstants.BACKGROUND_COLOR);
+        dialog.setLayout(new BorderLayout());
+
+        JLabel lblTitle = new JLabel("THỐNG KÊ THÍ SINH", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 17));
+        lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
+        lblTitle.setBorder(new EmptyBorder(15, 0, 10, 0));
+        dialog.add(lblTitle, BorderLayout.NORTH);
+
+        JPanel pnlContent = new JPanel(new GridLayout(2, 1, 10, 10));
+        pnlContent.setOpaque(false);
+        pnlContent.setBorder(new EmptyBorder(10, 20, 10, 20));
+
+        // Thống kê đối tượng
+        JPanel pnlDoiTuong = new JPanel(new BorderLayout());
+        pnlDoiTuong.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Theo Đối tượng", 0, 0, UIConstants.FONT_BOLD));
+        pnlDoiTuong.setOpaque(false);
+        JTextArea txtDoiTuong = new JTextArea();
+        txtDoiTuong.setFont(UIConstants.FONT_NORMAL);
+        txtDoiTuong.setEditable(false);
+        List<Object[]> statDT = candidateBUS.countByDoiTuong();
+        if (statDT != null) {
+            for (Object[] row : statDT) {
+                String name = "Không có";
+                if (row[0] != null) {
+                    if (row[0] instanceof entity.DoiTuong) {
+                        name = ((entity.DoiTuong) row[0]).getMa();
+                    } else {
+                        name = row[0].toString();
+                    }
+                }
+                txtDoiTuong.append("  - Đối tượng " + name + ": " + row[1] + " thí sinh\n");
+            }
+        }
+        pnlDoiTuong.add(new JScrollPane(txtDoiTuong), BorderLayout.CENTER);
+
+        // Thống kê khu vực
+        JPanel pnlKhuVuc = new JPanel(new BorderLayout());
+        pnlKhuVuc.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Theo Khu vực", 0, 0, UIConstants.FONT_BOLD));
+        pnlKhuVuc.setOpaque(false);
+        JTextArea txtKhuVuc = new JTextArea();
+        txtKhuVuc.setFont(UIConstants.FONT_NORMAL);
+        txtKhuVuc.setEditable(false);
+        List<Object[]> statKV = candidateBUS.countByKhuVuc();
+        if (statKV != null) {
+            for (Object[] row : statKV) {
+                String name = "Không có";
+                if (row[0] != null) {
+                    if (row[0] instanceof entity.KhuVuc) {
+                        name = ((entity.KhuVuc) row[0]).getMa();
+                    } else {
+                        name = row[0].toString();
+                    }
+                }
+                txtKhuVuc.append("  - Khu vực " + name + ": " + row[1] + " thí sinh\n");
+            }
+        }
+        pnlKhuVuc.add(new JScrollPane(txtKhuVuc), BorderLayout.CENTER);
+
+        pnlContent.add(pnlDoiTuong);
+        pnlContent.add(pnlKhuVuc);
+
+        dialog.add(pnlContent, BorderLayout.CENTER);
+
+        // Tổng + Đóng
+        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlBtn.setOpaque(false);
+        JLabel lblTotal = new JLabel("Tổng số: " + candidateBUS.getTotalCount() + " thí sinh  |  ");
+        lblTotal.setFont(UIConstants.FONT_BOLD);
+        CustomButton btnClose = new CustomButton("Đóng", UIConstants.TABLE_HEADER_COLOR);
+        btnClose.setPreferredSize(new Dimension(110, 36));
+        btnClose.addActionListener(ev -> dialog.dispose());
+        pnlBtn.add(lblTotal);
+        pnlBtn.add(btnClose);
+        dialog.add(pnlBtn, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
     }
 }

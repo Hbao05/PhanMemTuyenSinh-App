@@ -50,16 +50,14 @@ public class ThiSinh {
     @Column(name = "updated_at")
     private LocalDate updatedAt;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "doi_tuong")
     private DoiTuong doiTuong;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "khu_vuc")
     private KhuVuc khuVuc;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
+    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private DiemThiXetTuyen diemThi;

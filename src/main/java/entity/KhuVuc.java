@@ -24,11 +24,10 @@ public enum KhuVuc {
 
     public static KhuVuc fromMa(String ma) {
         for (KhuVuc dt : values()) {
-            if (dt.ma.equals(ma)) {
+            if (dt.ma.equals(ma) || dt.name().equalsIgnoreCase(ma)) {
                 return dt;
             }
         }
-
-        throw new IllegalArgumentException("Mã khu vực không hợp lệ: " + ma);
+        return null; // fallback to null instead of throwing exception
     }
 }
