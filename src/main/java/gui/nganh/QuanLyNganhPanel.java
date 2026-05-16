@@ -27,7 +27,7 @@ public class QuanLyNganhPanel extends JPanel {
     private CustomButton    btnSearch, btnReset;
 
     // Nút chức năng
-    private CustomButton btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport;
+    private CustomButton btnAdd, btnEdit, btnDelete, btnImport;
 
     // Bảng dữ liệu
     private CustomTable       tblNganh;
@@ -118,10 +118,9 @@ public class QuanLyNganhPanel extends JPanel {
         btnAdd        = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
         btnEdit       = new CustomButton("Sửa",           UIConstants.PRIMARY_COLOR);
         btnDelete     = new CustomButton("Xóa",      UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("Chi tiết", UIConstants.PURPLE_COLOR);
         btnImport     = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
+        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnImport}) {
             b.setPreferredSize(new Dimension(118, 36));
             pnlActions.add(b);
         }
@@ -150,12 +149,12 @@ public class QuanLyNganhPanel extends JPanel {
     // ======================================================
     private void buildTable() {
         String[] cols = {"ID", "Mã Ngành", "Tên Ngành", "Tổ Hợp Gốc",
-                         "Chỉ Tiêu", "Điểm Sàn", "TT", "ĐGNL", "THPT", "VSAT"};
+                         "Chỉ Tiêu", "Điểm Sàn", "SL Đăng Ký", "TT", "ĐGNL", "THPT", "VSAT"};
 
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override public Class<?> getColumnClass(int c) {
-                return (c == 0 || c == 4) ? Integer.class : String.class;
+                return (c == 0 || c == 4 || c == 6) ? Integer.class : String.class;
             }
         };
 
@@ -164,13 +163,13 @@ public class QuanLyNganhPanel extends JPanel {
         tblNganh.setRowHeight(28);
 
         // Độ rộng cột
-        int[] widths = {45, 95, 280, 90, 75, 80, 45, 55, 55, 55};
+        int[] widths = {45, 95, 250, 90, 75, 80, 90, 45, 55, 55, 55};
         for (int i = 0; i < widths.length; i++) {
             tblNganh.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
 
         // Căn giữa cột số
-        for (int c : new int[]{0, 3, 4, 5}) {
+        for (int c : new int[]{0, 3, 4, 5, 6}) {
             tblNganh.getColumnModel().getColumn(c).setCellRenderer(CustomTable.centerRenderer());
         }
 
@@ -186,7 +185,7 @@ public class QuanLyNganhPanel extends JPanel {
                 return this;
             }
         };
-        for (int c : new int[]{6, 7, 8, 9}) {
+        for (int c : new int[]{7, 8, 9, 10}) {
             tblNganh.getColumnModel().getColumn(c).setCellRenderer(flagRend);
         }
 
@@ -292,11 +291,6 @@ public class QuanLyNganhPanel extends JPanel {
             }
         });
 
-        // Chi tiết
-        btnViewDetail.addActionListener(e -> {
-            Nganh n = getSelectedNganh();
-            if (n != null) showDetailDialog(n);
-        });
 
         // Double-click mở chi tiết
         tblNganh.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -347,6 +341,7 @@ public class QuanLyNganhPanel extends JPanel {
 
         if (list != null) {
             for (Nganh n : list) {
+                long slDangKy = nganhBUS.getSoLuongDangKy(n.getMaNganh());
                 tableModel.addRow(new Object[]{
                         n.getIdNganh(),
                         n.getMaNganh(),
@@ -354,6 +349,7 @@ public class QuanLyNganhPanel extends JPanel {
                         n.getToHopGoc(),
                         n.getChiTieu(),
                         n.getDiemSan() != null ? n.getDiemSan() : "-",
+                        slDangKy,
                         n.getTuyenThang(),
                         n.getDgnl(),
                         n.getThpt(),
@@ -451,6 +447,7 @@ public class QuanLyNganhPanel extends JPanel {
             {"Tên ngành",          n.getTenNganh()},
             {"Tổ hợp gốc",         n.getToHopGoc()},
             {"Chỉ tiêu",           n.getChiTieu()},
+            {"Số TS đăng ký",      nganhBUS.getSoLuongDangKy(n.getMaNganh())},
             {"Điểm sàn",           n.getDiemSan()},
             {"Điểm trúng tuyển",   n.getDiemTrungTuyen()},
             {"Tuyển thẳng",        flag(n.getTuyenThang())},

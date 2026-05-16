@@ -51,11 +51,28 @@ public class NganhDAO {
             tx = session.beginTransaction();
             Nganh n = session.get(Nganh.class, id);
             if (n != null) {
+                // Kiểm tra xem ngành này có Tổ hợp hay Nguyện vọng nào không
+                Long countToHop = session.createQuery("SELECT count(nth) FROM NganhToHop nth WHERE nth.maNganh = :ma", Long.class)
+                        .setParameter("ma", n.getMaNganh())
+                        .uniqueResult();
+                Long countNV = session.createQuery("SELECT count(nv) FROM NguyenVongXetTuyen nv WHERE nv.maNganh = :ma", Long.class)
+                        .setParameter("ma", n.getMaNganh())
+                        .uniqueResult();
+                        
+                if ((countToHop != null && countToHop > 0) || (countNV != null && countNV > 0)) {
+                    throw new RuntimeException("Không thể xóa ngành này vì đang có dữ liệu Tổ hợp hoặc Nguyện vọng tham chiếu!");
+                }
+
                 session.remove(n);
                 tx.commit();
                 return true;
             }
             return false;
+        } catch (RuntimeException e) {
+            if (tx != null && tx.isActive()) {
+                try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            }
+            throw e; // Ném ra ngoài để BUS xử lý thông báo
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
                 try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
@@ -125,7 +142,6 @@ public class NganhDAO {
         }
     }
 
-    // ── KIỂM TRA MÃ NGÀNH ĐÃ TỒN TẠI ────────────────────
     public boolean existsByMaNganh(String maNganh) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             String hql = "SELECT count(n) FROM Nganh n WHERE n.maNganh = :ma";
@@ -138,6 +154,17 @@ public class NganhDAO {
         }
     }
 
+    public Nganh getByMaNganh(String maNganh) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "FROM Nganh n WHERE n.maNganh = :ma";
+            return session.createQuery(hql, Nganh.class)
+                    .setParameter("ma", maNganh).uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     // ── LẤY TẤT CẢ (cho ComboBox) ────────────────────────
     public List<Nganh> getAll() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -145,6 +172,20 @@ public class NganhDAO {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    // ── ĐẾM SỐ LƯỢNG NGUYỆN VỌNG ĐĂNG KÝ VÀO NGÀNH ──────
+    public long countNguyenVongByMaNganh(String maNganh) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT count(nv) FROM NguyenVongXetTuyen nv WHERE nv.maNganh = :ma";
+            Long count = session.createQuery(hql, Long.class)
+                    .setParameter("ma", maNganh)
+                    .uniqueResult();
+            return count != null ? count : 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
         }
     }
 }

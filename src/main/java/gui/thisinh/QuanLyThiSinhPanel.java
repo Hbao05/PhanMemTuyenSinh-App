@@ -28,7 +28,7 @@ public class QuanLyThiSinhPanel extends JPanel {
     private CustomButton btnSearch, btnReset;
 
     // Các nút chức năng
-    private CustomButton btnAdd, btnEdit, btnDelete, btnImport, btnViewDetail;
+    private CustomButton btnAdd, btnEdit, btnDelete, btnImport, btnStatistic;
 
     // Bảng dữ liệu
     private CustomTable tblCandidates;
@@ -39,11 +39,11 @@ public class QuanLyThiSinhPanel extends JPanel {
     private JLabel lblPageInfo, lblTotalRecords;
 
     private int currentPage = 1;
-    private int totalPages  = 1;
+    private int totalPages = 1;
     private String currentKeyword = "";
 
     // ======================================================
-    //  CONSTRUCTOR
+    // CONSTRUCTOR
     // ======================================================
     public QuanLyThiSinhPanel() {
         this.candidateBUS = new ThiSinhBUS();
@@ -61,8 +61,8 @@ public class QuanLyThiSinhPanel extends JPanel {
     }
 
     // ======================================================
-    //  1+2. HEADER + TOOLBAR gộp trong 1 panel NORTH duy nhất
-    //  (tránh lồng panel nhiều lớp gây che table header)
+    // 1+2. HEADER + TOOLBAR gộp trong 1 panel NORTH duy nhất
+    // (tránh lồng panel nhiều lớp gây che table header)
     // ======================================================
     private void buildNorthArea() {
         JPanel pnlNorth = new JPanel(new BorderLayout());
@@ -81,7 +81,7 @@ public class QuanLyThiSinhPanel extends JPanel {
         lblTotalRecords.setFont(UIConstants.FONT_NORMAL);
         lblTotalRecords.setForeground(new Color(189, 215, 238));
 
-        pnlHeader.add(lblTitle,       BorderLayout.WEST);
+        pnlHeader.add(lblTitle, BorderLayout.WEST);
         pnlHeader.add(lblTotalRecords, BorderLayout.EAST);
 
         // ---- Toolbar ----
@@ -115,18 +115,18 @@ public class QuanLyThiSinhPanel extends JPanel {
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlActions.setOpaque(false);
 
-        btnAdd        = new CustomButton("+ Thêm mới",  UIConstants.SUCCESS_COLOR);
-        btnEdit       = new CustomButton("Sửa",         UIConstants.PRIMARY_COLOR);
-        btnDelete     = new CustomButton("Xóa",         UIConstants.DANGER_COLOR);
-        btnViewDetail = new CustomButton("Chi tiết",    UIConstants.PURPLE_COLOR);
-        btnImport     = new CustomButton("Import",      UIConstants.TEAL_COLOR);
+        btnAdd = new CustomButton("+ Thêm mới", UIConstants.SUCCESS_COLOR);
+        btnEdit = new CustomButton("Sửa", UIConstants.PRIMARY_COLOR);
+        btnDelete = new CustomButton("Xóa", UIConstants.DANGER_COLOR);
+        btnStatistic = new CustomButton("Thống kê", UIConstants.PRIMARY_COLOR);
+        btnImport = new CustomButton("Import", UIConstants.TEAL_COLOR);
 
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnViewDetail, btnImport}) {
+        for (CustomButton b : new CustomButton[] { btnAdd, btnEdit, btnDelete, btnStatistic, btnImport }) {
             b.setPreferredSize(new Dimension(120, 36));
             pnlActions.add(b);
         }
 
-        pnlToolbar.add(pnlSearch,  BorderLayout.WEST);
+        pnlToolbar.add(pnlSearch, BorderLayout.WEST);
         pnlToolbar.add(pnlActions, BorderLayout.EAST);
 
         // Đường kẻ phân cách
@@ -136,23 +136,28 @@ public class QuanLyThiSinhPanel extends JPanel {
         JPanel pnlToolbarWrapper = new JPanel(new BorderLayout());
         pnlToolbarWrapper.setOpaque(false);
         pnlToolbarWrapper.add(pnlToolbar, BorderLayout.CENTER);
-        pnlToolbarWrapper.add(sep,        BorderLayout.SOUTH);
+        pnlToolbarWrapper.add(sep, BorderLayout.SOUTH);
 
         // Gộp lại
-        pnlNorth.add(pnlHeader,         BorderLayout.NORTH);
+        pnlNorth.add(pnlHeader, BorderLayout.NORTH);
         pnlNorth.add(pnlToolbarWrapper, BorderLayout.CENTER);
 
         add(pnlNorth, BorderLayout.NORTH);
     }
 
     // ======================================================
-    //  3. BẢNG DỮ LIỆU
+    // 3. BẢNG DỮ LIỆU
     // ======================================================
     private void buildTable() {
-        String[] columns = {"ID", "CCCD", "Họ", "Tên", "Ngày Sinh", "Giới Tính", "Khu Vực", "Đối Tượng"};
+        String[] columns = { "ID", "CCCD", "SBD", "Họ", "Tên", "Ngày Sinh", "Giới Tính", "Khu Vực", "Đối Tượng" };
         tableModel = new DefaultTableModel(columns, 0) {
-            @Override public boolean isCellEditable(int row, int column) { return false; }
-            @Override public Class<?> getColumnClass(int col) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+
+            @Override
+            public Class<?> getColumnClass(int col) {
                 return col == 0 ? Integer.class : String.class;
             }
         };
@@ -162,12 +167,12 @@ public class QuanLyThiSinhPanel extends JPanel {
         tblCandidates.setRowHeight(28);
 
         // Căn chỉnh cột
-        int[] widths = {50, 120, 160, 100, 100, 80, 80, 100};
+        int[] widths = { 50, 120, 100, 160, 100, 100, 80, 80, 100 };
         for (int i = 0; i < widths.length; i++) {
             tblCandidates.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
         // Căn giữa cột ID và Giới tính, Khu vực
-        for (int col : new int[]{0, 5, 6, 7}) {
+        for (int col : new int[] { 0, 5, 6, 7, 8 }) {
             tblCandidates.getColumnModel().getColumn(col).setCellRenderer(CustomTable.centerRenderer());
         }
 
@@ -183,15 +188,14 @@ public class QuanLyThiSinhPanel extends JPanel {
     }
 
     // ======================================================
-    //  4. FOOTER – Phân trang
+    // 4. FOOTER – Phân trang
     // ======================================================
     private void buildFooter() {
         JPanel pnlFooter = new JPanel(new BorderLayout());
         pnlFooter.setOpaque(false);
         pnlFooter.setBorder(new CompoundBorder(
                 new MatteBorder(1, 0, 0, 0, new Color(220, 220, 220)),
-                new EmptyBorder(8, 15, 10, 15)
-        ));
+                new EmptyBorder(8, 15, 10, 15)));
 
         // Thông tin trang (giữa)
         JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
@@ -216,7 +220,7 @@ public class QuanLyThiSinhPanel extends JPanel {
     }
 
     // ======================================================
-    //  5. SỰ KIỆN
+    // 5. SỰ KIỆN
     // ======================================================
     private void setupEvents() {
         // Tìm kiếm
@@ -233,10 +237,16 @@ public class QuanLyThiSinhPanel extends JPanel {
 
         // Phân trang
         btnPrev.addActionListener(e -> {
-            if (currentPage > 1) { currentPage--; loadDataToTable(); }
+            if (currentPage > 1) {
+                currentPage--;
+                loadDataToTable();
+            }
         });
         btnNext.addActionListener(e -> {
-            if (currentPage < totalPages) { currentPage++; loadDataToTable(); }
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadDataToTable();
+            }
         });
 
         // Thêm mới
@@ -264,7 +274,8 @@ public class QuanLyThiSinhPanel extends JPanel {
                 Window parent = SwingUtilities.getWindowAncestor(this);
                 SuaThiSinhDialog dialog = new SuaThiSinhDialog(parent, tsFull, candidateBUS);
                 dialog.setVisible(true);
-                if (dialog.isUpdated()) loadDataToTable();
+                if (dialog.isUpdated())
+                    loadDataToTable();
             }
         });
 
@@ -277,11 +288,11 @@ public class QuanLyThiSinhPanel extends JPanel {
                 return;
             }
             String cccd = (String) tblCandidates.getValueAt(row, 1);
-            String ten   = tblCandidates.getValueAt(row, 2) + " " + tblCandidates.getValueAt(row, 3);
+            String ten = tblCandidates.getValueAt(row, 2) + " " + tblCandidates.getValueAt(row, 3);
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Bạn có chắc muốn xóa thí sinh?\n" +
-                    "  CCCD : " + cccd + "\n" +
-                    "  Họ tên: " + ten.trim(),
+                            "  CCCD : " + cccd + "\n" +
+                            "  Họ tên: " + ten.trim(),
                     "Xác nhận xóa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
@@ -291,7 +302,8 @@ public class QuanLyThiSinhPanel extends JPanel {
                     JOptionPane.showMessageDialog(this,
                             "Đã xóa thí sinh thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                     // Điều chỉnh trang nếu xóa hết trang cuối
-                    if (tableModel.getRowCount() == 1 && currentPage > 1) currentPage--;
+                    if (tableModel.getRowCount() == 1 && currentPage > 1)
+                        currentPage--;
                     loadDataToTable();
                 } else {
                     JOptionPane.showMessageDialog(this, result, "Lỗi xóa", JOptionPane.ERROR_MESSAGE);
@@ -299,18 +311,10 @@ public class QuanLyThiSinhPanel extends JPanel {
             }
         });
 
-        // Xem chi tiết
-        btnViewDetail.addActionListener(e -> {
-            int row = tblCandidates.getSelectedRow();
-            if (row < 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Vui lòng chọn thí sinh để xem chi tiết!", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            int id = (int) tblCandidates.getValueAt(row, 0);
-            ThiSinh ts = candidateBUS.getCandidate(id);
-            if (ts != null) showDetailDialog(ts);
-        });
+        // Thống kê
+        btnStatistic.addActionListener(e -> showStatisticDialog());
+
+
 
         // Double-click mở chi tiết
         tblCandidates.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -321,7 +325,8 @@ public class QuanLyThiSinhPanel extends JPanel {
                     if (row >= 0) {
                         int id = (int) tblCandidates.getValueAt(row, 0);
                         ThiSinh ts = candidateBUS.getCandidate(id);
-                        if (ts != null) showDetailDialog(ts);
+                        if (ts != null)
+                            showDetailDialog(ts);
                     }
                 }
             }
@@ -332,7 +337,7 @@ public class QuanLyThiSinhPanel extends JPanel {
     }
 
     // ======================================================
-    //  6. LOGIC NGHIỆP VỤ
+    // 6. LOGIC NGHIỆP VỤ
     // ======================================================
     private void doSearch() {
         currentKeyword = txtSearch.getText().trim();
@@ -345,10 +350,10 @@ public class QuanLyThiSinhPanel extends JPanel {
         List<ThiSinh> list;
 
         if (currentKeyword.isEmpty()) {
-            list       = candidateBUS.getList(currentPage);
+            list = candidateBUS.getList(currentPage);
             totalPages = candidateBUS.calculateTotalPages();
         } else {
-            list       = candidateBUS.search(currentPage, currentKeyword);
+            list = candidateBUS.search(currentPage, currentKeyword);
             totalPages = candidateBUS.calculateSearchTotalPages(currentKeyword);
         }
 
@@ -368,15 +373,16 @@ public class QuanLyThiSinhPanel extends JPanel {
 
         if (list != null) {
             for (ThiSinh ts : list) {
-                tableModel.addRow(new Object[]{
+                tableModel.addRow(new Object[] {
                         ts.getIdThiSinh(),
                         ts.getCccd(),
+                        ts.getSoBaoDanh() != null ? ts.getSoBaoDanh() : "",
                         ts.getHo(),
                         ts.getTen(),
                         ts.getNgaySinh(),
                         ts.getGioiTinh(),
-                        ts.getKhuVuc(),
-                        ts.getDoiTuong()
+                        ts.getKhuVuc() != null && !ts.getKhuVuc().isEmpty() ? ts.getKhuVuc() : "—",
+                        ts.getDoiTuong() != null && !ts.getDoiTuong().isEmpty() ? ts.getDoiTuong() : "—"
                 });
             }
         }
@@ -386,50 +392,103 @@ public class QuanLyThiSinhPanel extends JPanel {
     private void showDetailDialog(ThiSinh ts) {
         JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
                 "Chi tiết Thí sinh", Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setSize(430, 480);
+        dialog.setSize(800, 500); // Tăng kích thước
         dialog.setLocationRelativeTo(this);
         dialog.setResizable(false);
         dialog.getContentPane().setBackground(UIConstants.BACKGROUND_COLOR);
         dialog.setLayout(new BorderLayout());
 
         // Tiêu đề
-        JLabel lblTitle = new JLabel("THÔNG TIN CHI TIẾT", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("THÔNG TIN CHI TIẾT THÍ SINH", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 17));
         lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
         lblTitle.setBorder(new EmptyBorder(15, 0, 10, 0));
         dialog.add(lblTitle, BorderLayout.NORTH);
 
-        // Nội dung – dùng GridLayout
+        // Nội dung chia làm 2 cột
+        JPanel pnlContent = new JPanel(new GridLayout(1, 2, 10, 0));
+        pnlContent.setOpaque(false);
+        pnlContent.setBorder(new EmptyBorder(10, 20, 10, 20));
+
+        // Cột 1: Thông tin cá nhân
+        JPanel pnlLeft = new JPanel(new BorderLayout());
+        pnlLeft.setOpaque(false);
+        pnlLeft.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Thông tin cá nhân", 0, 0, UIConstants.FONT_BOLD));
+        
         JPanel pnlInfo = new JPanel(new GridLayout(0, 2, 8, 10));
         pnlInfo.setOpaque(false);
-        pnlInfo.setBorder(new EmptyBorder(5, 30, 20, 30));
+        pnlInfo.setBorder(new EmptyBorder(10, 15, 10, 15));
 
-        String[][] rows = {
-                {"CCCD",          ts.getCccd()},
-                {"Họ",            ts.getHo()},
-                {"Tên",           ts.getTen()},
-                {"Ngày sinh",     ts.getNgaySinh()},
-                {"Giới tính",     ts.getGioiTinh()},
-                {"Nơi sinh",      ts.getNoiSinh()},
-                {"Điện thoại",    ts.getDienThoai()},
-                {"Email",         ts.getEmail()},
-                {"Đối tượng UT",  ts.getDoiTuong()},
-                {"Khu vực UT",    ts.getKhuVuc()},
-                {"Cập nhật lúc",  ts.getUpdatedAt() != null ? ts.getUpdatedAt().toString() : ""},
+        String[][] rowsInfo = {
+                { "CCCD", ts.getCccd() },
+                { "Số báo danh", ts.getSoBaoDanh() },
+                { "Họ", ts.getHo() },
+                { "Tên", ts.getTen() },
+                { "Ngày sinh", ts.getNgaySinh() },
+                { "Giới tính", ts.getGioiTinh() },
+                { "Nơi sinh", ts.getNoiSinh() },
+                { "Điện thoại", ts.getDienThoai() },
+                { "Email", ts.getEmail() },
+                { "Đối tượng UT", ts.getDoiTuong() },
+                { "Khu vực UT", ts.getKhuVuc() },
+                { "Cập nhật lúc", ts.getUpdatedAt() != null ? ts.getUpdatedAt().toString() : "" },
         };
-        for (String[] r : rows) {
+        for (String[] r : rowsInfo) {
             JLabel lKey = new JLabel(r[0] + ":");
             lKey.setFont(UIConstants.FONT_BOLD);
             lKey.setForeground(Color.DARK_GRAY);
-
-            JLabel lVal = new JLabel(r[1] != null ? r[1] : "-");
+            JLabel lVal = new JLabel(r[1] != null && !r[1].isEmpty() ? r[1] : "-");
             lVal.setFont(UIConstants.FONT_NORMAL);
             lVal.setForeground(new Color(50, 50, 50));
-
             pnlInfo.add(lKey);
             pnlInfo.add(lVal);
         }
-        dialog.add(pnlInfo, BorderLayout.CENTER);
+        pnlLeft.add(new JScrollPane(pnlInfo), BorderLayout.CENTER);
+
+        // Cột 2: Điểm thi
+        JPanel pnlRight = new JPanel(new BorderLayout());
+        pnlRight.setOpaque(false);
+        pnlRight.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Điểm thi", 0, 0, UIConstants.FONT_BOLD));
+        
+        JPanel pnlScores = new JPanel(new GridLayout(0, 2, 8, 10));
+        pnlScores.setOpaque(false);
+        pnlScores.setBorder(new EmptyBorder(10, 15, 10, 15));
+
+        entity.DiemThiXetTuyen dt = ts.getDiemThi();
+        String[][] rowsScores;
+        if (dt != null) {
+            rowsScores = new String[][] {
+                { "Toán", dt.getDiemToan() != null ? dt.getDiemToan().toString() : "-" },
+                { "Văn", dt.getDiemVan() != null ? dt.getDiemVan().toString() : "-" },
+                { "Ngoại ngữ (Thi)", dt.getN1Thi() != null ? dt.getN1Thi().toString() : "-" },
+                { "Ngoại ngữ (QĐ)", dt.getN1Cc() != null ? dt.getN1Cc().toString() : "-" },
+                { "Lý", dt.getDiemLy() != null ? dt.getDiemLy().toString() : "-" },
+                { "Hóa", dt.getDiemHoa() != null ? dt.getDiemHoa().toString() : "-" },
+                { "Sinh", dt.getDiemSinh() != null ? dt.getDiemSinh().toString() : "-" },
+                { "Sử", dt.getDiemSu() != null ? dt.getDiemSu().toString() : "-" },
+                { "Địa", dt.getDiemDia() != null ? dt.getDiemDia().toString() : "-" },
+                { "GDCD/KTPL", dt.getDiemKtpl() != null ? dt.getDiemKtpl().toString() : "-" },
+                { "ĐGNL/V-SAT", dt.getNl1() != null ? dt.getNl1().toString() : "-" },
+            };
+        } else {
+            rowsScores = new String[][] { { "Trạng thái", "Chưa có điểm thi" } };
+        }
+
+        for (String[] r : rowsScores) {
+            JLabel lKey = new JLabel(r[0] + ":");
+            lKey.setFont(UIConstants.FONT_BOLD);
+            lKey.setForeground(Color.DARK_GRAY);
+            JLabel lVal = new JLabel(r[1]);
+            lVal.setFont(UIConstants.FONT_NORMAL);
+            lVal.setForeground(new Color(50, 50, 50));
+            pnlScores.add(lKey);
+            pnlScores.add(lVal);
+        }
+        pnlRight.add(new JScrollPane(pnlScores), BorderLayout.CENTER);
+
+        pnlContent.add(pnlLeft);
+        pnlContent.add(pnlRight);
+        dialog.add(pnlContent, BorderLayout.CENTER);
 
         // Nút Đóng
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -449,7 +508,8 @@ public class QuanLyThiSinhPanel extends JPanel {
         fileChooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
         fileChooser.setDialogTitle("Chọn file Excel Danh sách Thí sinh");
 
-        if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
         File selectedFile = fileChooser.getSelectedFile();
 
         // Dialog Loading
@@ -477,6 +537,7 @@ public class QuanLyThiSinhPanel extends JPanel {
             @Override
             protected String doInBackground() throws Exception {
                 Set<String> cccdCache = candidateBUS.newImportCccdCache();
+                Set<String> sbdCache = candidateBUS.newImportSbdCache();
                 ThiSinhBUS.ImportCandidateResult tongKet = new ThiSinhBUS.ImportCandidateResult();
                 AtomicInteger soLoCoDuLieu = new AtomicInteger(0);
                 ExcelUtil.forEachCandidateExcelBatch(
@@ -486,13 +547,14 @@ public class QuanLyThiSinhPanel extends JPanel {
                             if (!batch.isEmpty()) {
                                 soLoCoDuLieu.incrementAndGet();
                             }
-                            tongKet.merge(candidateBUS.importCandidatesBatch(batch, cccdCache));
+                            tongKet.merge(candidateBUS.importCandidatesBatch(batch, cccdCache, sbdCache));
                         });
                 if (soLoCoDuLieu.get() == 0 && tongKet.isEmptyTotals()) {
                     return "Lỗi: Danh sách import trống hoặc file Excel không có dữ liệu!";
                 }
                 return tongKet.formatMessage();
             }
+
             @Override
             protected void done() {
                 loadingDialog.dispose();
@@ -514,5 +576,84 @@ public class QuanLyThiSinhPanel extends JPanel {
         };
         worker.execute();
         loadingDialog.setVisible(true);
+    }
+
+    /** Dialog Thống Kê Thí Sinh */
+    private void showStatisticDialog() {
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
+                "Thống kê Thí sinh", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIConstants.BACKGROUND_COLOR);
+        dialog.setLayout(new BorderLayout());
+
+        JLabel lblTitle = new JLabel("THỐNG KÊ THÍ SINH", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 17));
+        lblTitle.setForeground(UIConstants.TABLE_HEADER_COLOR);
+        lblTitle.setBorder(new EmptyBorder(15, 0, 10, 0));
+        dialog.add(lblTitle, BorderLayout.NORTH);
+
+        JPanel pnlContent = new JPanel(new GridLayout(2, 1, 10, 10));
+        pnlContent.setOpaque(false);
+        pnlContent.setBorder(new EmptyBorder(10, 20, 10, 20));
+
+        // Thống kê đối tượng
+        JPanel pnlDoiTuong = new JPanel(new BorderLayout());
+        pnlDoiTuong.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY),
+                "Theo Đối tượng", 0, 0, UIConstants.FONT_BOLD));
+        pnlDoiTuong.setOpaque(false);
+        JTextArea txtDoiTuong = new JTextArea();
+        txtDoiTuong.setFont(UIConstants.FONT_NORMAL);
+        txtDoiTuong.setEditable(false);
+        List<Object[]> statDT = candidateBUS.countByDoiTuong();
+        if (statDT != null) {
+            for (Object[] row : statDT) {
+                String name = "Không có";
+                if (row[0] != null) {
+                    name = row[0].toString();
+                }
+                txtDoiTuong.append("  - Đối tượng " + name + ": " + row[1] + " thí sinh\n");
+            }
+        }
+        pnlDoiTuong.add(new JScrollPane(txtDoiTuong), BorderLayout.CENTER);
+
+        // Thống kê khu vực
+        JPanel pnlKhuVuc = new JPanel(new BorderLayout());
+        pnlKhuVuc.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Theo Khu vực",
+                0, 0, UIConstants.FONT_BOLD));
+        pnlKhuVuc.setOpaque(false);
+        JTextArea txtKhuVuc = new JTextArea();
+        txtKhuVuc.setFont(UIConstants.FONT_NORMAL);
+        txtKhuVuc.setEditable(false);
+        List<Object[]> statKV = candidateBUS.countByKhuVuc();
+        if (statKV != null) {
+            for (Object[] row : statKV) {
+                String name = "Không có";
+                if (row[0] != null) {
+                    name = row[0].toString();
+                }
+                txtKhuVuc.append("  - Khu vực " + name + ": " + row[1] + " thí sinh\n");
+            }
+        }
+        pnlKhuVuc.add(new JScrollPane(txtKhuVuc), BorderLayout.CENTER);
+
+        pnlContent.add(pnlDoiTuong);
+        pnlContent.add(pnlKhuVuc);
+
+        dialog.add(pnlContent, BorderLayout.CENTER);
+
+        // Tổng + Đóng
+        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlBtn.setOpaque(false);
+        JLabel lblTotal = new JLabel("Tổng số: " + candidateBUS.getTotalCount() + " thí sinh  |  ");
+        lblTotal.setFont(UIConstants.FONT_BOLD);
+        CustomButton btnClose = new CustomButton("Đóng", UIConstants.TABLE_HEADER_COLOR);
+        btnClose.setPreferredSize(new Dimension(110, 36));
+        btnClose.addActionListener(ev -> dialog.dispose());
+        pnlBtn.add(lblTotal);
+        pnlBtn.add(btnClose);
+        dialog.add(pnlBtn, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
     }
 }

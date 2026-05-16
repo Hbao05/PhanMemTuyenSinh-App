@@ -24,7 +24,7 @@ public class QuanLyNganhToHopPanel extends JPanel {
 
     private CustomTextField txtSearch;
     private CustomButton    btnSearch, btnReset;
-    private CustomButton    btnDelete, btnImport;
+    private CustomButton    btnAdd, btnEdit, btnDelete, btnImport;
 
     private CustomTable       tblNganhToHop;
     private DefaultTableModel tableModel;
@@ -103,10 +103,12 @@ public class QuanLyNganhToHopPanel extends JPanel {
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlActions.setOpaque(false);
 
+        btnAdd    = new CustomButton("Thêm mới",  UIConstants.SUCCESS_COLOR);
+        btnEdit   = new CustomButton("Sửa",       UIConstants.WARNING_COLOR);
         btnDelete = new CustomButton("Xóa",      UIConstants.DANGER_COLOR);
         btnImport = new CustomButton("Import",   UIConstants.TEAL_COLOR);
 
-        for (CustomButton b : new CustomButton[]{btnDelete, btnImport}) {
+        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnImport}) {
             b.setPreferredSize(new Dimension(118, 36));
             pnlActions.add(b);
         }
@@ -240,6 +242,24 @@ public class QuanLyNganhToHopPanel extends JPanel {
         });
 
         btnImport.addActionListener(e -> doImportExcel());
+
+        btnAdd.addActionListener(e -> {
+            NganhToHopDialog dlg = new NganhToHopDialog((Window) SwingUtilities.getWindowAncestor(this), null, bus);
+            dlg.setVisible(true);
+            if (dlg.isSaved()) loadData();
+        });
+
+        btnEdit.addActionListener(e -> {
+            int row = tblNganhToHop.getSelectedRow();
+            if (row < 0) { warn("Vui lòng chọn bản ghi cần sửa!"); return; }
+            int id = (int) tblNganhToHop.getValueAt(row, 0);
+            NganhToHop item = bus.getById(id);
+            if (item != null) {
+                NganhToHopDialog dlg = new NganhToHopDialog((Window) SwingUtilities.getWindowAncestor(this), item, bus);
+                dlg.setVisible(true);
+                if (dlg.isSaved()) loadData();
+            }
+        });
     }
 
     // ── SEARCH ──

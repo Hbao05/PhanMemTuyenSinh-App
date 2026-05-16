@@ -18,15 +18,16 @@ public class SuaThiSinhDialog extends JDialog {
     private boolean isUpdated = false;
 
     // Các Component nhập liệu
-    private CustomTextField txtCccd, txtHo, txtTen, txtNgaySinh, txtDienThoai, txtEmail, txtNoiSinh;
-    private CustomComboBox<String> cbxGioiTinh;
+    private CustomTextField txtCccd, txtSbd, txtHo, txtTen, txtNgaySinh, txtDienThoai, txtEmail;
+    private CustomTextField txtKhuVuc, txtDoiTuong;
+    private CustomComboBox<String> cbxGioiTinh, cbxNoiSinh;
 
     public SuaThiSinhDialog(Window parent, ThiSinh candidate, ThiSinhBUS candidateBUS) {
         super(parent, "Cập nhật thông tin thí sinh", ModalityType.APPLICATION_MODAL);
         this.candidate = candidate;
         this.candidateBUS = candidateBUS;
 
-        setSize(450, 550);
+        setSize(480, 600);
         setLocationRelativeTo(parent);
         setResizable(false);
         setLayout(new BorderLayout());
@@ -45,14 +46,18 @@ public class SuaThiSinhDialog extends JDialog {
         add(lblTitle, BorderLayout.NORTH);
 
         // --- PHẦN FORM NHẬP LIỆU ---
-        // Dùng GridLayout chia làm 8 hàng, 2 cột (Nhãn - Ô nhập)
-        JPanel pnlForm = new JPanel(new GridLayout(8, 2, 10, 15));
+        // Dùng GridLayout chia làm 11 hàng, 2 cột (Nhãn - Ô nhập)
+        JPanel pnlForm = new JPanel(new GridLayout(11, 2, 10, 15));
         pnlForm.setOpaque(false);
         pnlForm.setBorder(new EmptyBorder(10, 30, 20, 30));
 
         pnlForm.add(createLabel("Số CCCD (*)"));
         txtCccd = new CustomTextField(20);
         pnlForm.add(txtCccd);
+
+        pnlForm.add(createLabel("Số báo danh"));
+        txtSbd = new CustomTextField(20);
+        pnlForm.add(txtSbd);
 
         pnlForm.add(createLabel("Họ"));
         txtHo = new CustomTextField(20);
@@ -71,8 +76,8 @@ public class SuaThiSinhDialog extends JDialog {
         pnlForm.add(cbxGioiTinh);
 
         pnlForm.add(createLabel("Nơi sinh"));
-        txtNoiSinh = new CustomTextField(20);
-        pnlForm.add(txtNoiSinh);
+        cbxNoiSinh = new CustomComboBox<>(util.ProvinceUtil.PROVINCES);
+        pnlForm.add(cbxNoiSinh);
 
         pnlForm.add(createLabel("Điện thoại"));
         txtDienThoai = new CustomTextField(20);
@@ -81,6 +86,14 @@ public class SuaThiSinhDialog extends JDialog {
         pnlForm.add(createLabel("Email"));
         txtEmail = new CustomTextField(20);
         pnlForm.add(txtEmail);
+
+        pnlForm.add(createLabel("Đối tượng ưu tiên"));
+        txtDoiTuong = new CustomTextField(20);
+        pnlForm.add(txtDoiTuong);
+
+        pnlForm.add(createLabel("Khu vực ưu tiên"));
+        txtKhuVuc = new CustomTextField(20);
+        pnlForm.add(txtKhuVuc);
 
         add(pnlForm, BorderLayout.CENTER);
 
@@ -114,13 +127,16 @@ public class SuaThiSinhDialog extends JDialog {
     private void loadDataToForm() {
         if (candidate != null) {
             txtCccd.setText(candidate.getCccd());
+            txtSbd.setText(candidate.getSoBaoDanh());
             txtHo.setText(candidate.getHo());
             txtTen.setText(candidate.getTen());
             txtNgaySinh.setText(candidate.getNgaySinh());
             cbxGioiTinh.setSelectedItem(candidate.getGioiTinh());
-            txtNoiSinh.setText(candidate.getNoiSinh());
+            cbxNoiSinh.setSelectedItem(candidate.getNoiSinh());
             txtDienThoai.setText(candidate.getDienThoai());
             txtEmail.setText(candidate.getEmail());
+            txtDoiTuong.setText(candidate.getDoiTuong() != null ? candidate.getDoiTuong() : "");
+            txtKhuVuc.setText(candidate.getKhuVuc() != null ? candidate.getKhuVuc() : "");
         }
     }
 
@@ -128,13 +144,16 @@ public class SuaThiSinhDialog extends JDialog {
     private void saveCandidate() {
         // Cập nhật lại Object hiện tại
         candidate.setCccd(txtCccd.getText().trim());
+        candidate.setSoBaoDanh(txtSbd.getText().trim());
         candidate.setHo(txtHo.getText().trim());
         candidate.setTen(txtTen.getText().trim());
         candidate.setNgaySinh(txtNgaySinh.getText().trim());
         candidate.setGioiTinh(cbxGioiTinh.getSelectedItem().toString());
-        candidate.setNoiSinh(txtNoiSinh.getText().trim());
+        candidate.setNoiSinh(cbxNoiSinh.getSelectedItem().toString());
         candidate.setDienThoai(txtDienThoai.getText().trim());
         candidate.setEmail(txtEmail.getText().trim());
+        candidate.setDoiTuong(txtDoiTuong.getText().trim());
+        candidate.setKhuVuc(txtKhuVuc.getText().trim());
 
         // Cập nhật ngày sửa cuối
         candidate.setUpdatedAt(LocalDate.now());
