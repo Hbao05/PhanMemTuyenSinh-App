@@ -60,12 +60,10 @@ public class Nganh {
     private Integer slThpt;
 
     // ── Quan hệ: Nganh 1-N NganhToHop (theo manganh) ──
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manganh", referencedColumnName = "manganh", insertable = false, updatable = false)
+    @OneToMany(mappedBy = "nganh", fetch = FetchType.LAZY)
     private List<NganhToHop> danhSachToHop;
 
     // ── Quan hệ: Nganh 1-N NguyenVongXetTuyen (theo manganh) ──
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "nv_manganh", referencedColumnName = "manganh", insertable = false, updatable = false)
+    @OneToMany(mappedBy = "nganh", fetch = FetchType.LAZY)
     private List<NguyenVongXetTuyen> danhSachNguyenVong;
 }

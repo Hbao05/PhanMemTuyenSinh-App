@@ -55,10 +55,13 @@ public class ToHopMonThiBUS {
     public List<ToHopMonThi> getAll() {
         return dao.getAll();
     }
-
+    
     public String addToHop(ToHopMonThi toHop) {
         if (toHop.getMaToHop() == null || toHop.getMaToHop().trim().isEmpty()) {
             return "Error: Mã tổ hợp không được để trống!";
+        }
+        if (hasDuplicateSubjects(toHop)) {
+            return "Error: Các môn trong tổ hợp không được trùng nhau!";
         }
         if (toHop.getMon1() == null || toHop.getMon1().trim().isEmpty() ||
             toHop.getMon2() == null || toHop.getMon2().trim().isEmpty() ||
@@ -78,6 +81,9 @@ public class ToHopMonThiBUS {
         }
         if (toHop.getMaToHop() == null || toHop.getMaToHop().trim().isEmpty()) {
             return "Error: Mã tổ hợp không được để trống!";
+        }
+        if (hasDuplicateSubjects(toHop)) {
+            return "Error: Các môn trong tổ hợp không được trùng nhau!";
         }
         if (toHop.getMon1() == null || toHop.getMon1().trim().isEmpty() ||
             toHop.getMon2() == null || toHop.getMon2().trim().isEmpty() ||
@@ -110,6 +116,8 @@ public class ToHopMonThiBUS {
             String key = t.getMaToHop().trim().toUpperCase();
             if (existingCodes.contains(key)) {
                 skipped++;
+            } else if (hasDuplicateSubjects(t)) {
+                skipped++;
             } else {
                 boolean ok = dao.insert(t);
                 if (ok) { added++; existingCodes.add(key); }
@@ -118,5 +126,13 @@ public class ToHopMonThiBUS {
         }
 
         return String.format("Import hoàn tất!\n- Thêm mới thành công: %d tổ hợp.\n- Bỏ qua (trùng mã / lỗi): %d dòng.", added, skipped);
+    }
+    private boolean hasDuplicateSubjects(ToHopMonThi t) {
+        String m1 = t.getMon1() != null ? t.getMon1().trim() : "";
+        String m2 = t.getMon2() != null ? t.getMon2().trim() : "";
+        String m3 = t.getMon3() != null ? t.getMon3().trim() : "";
+        
+        if (m1.isEmpty() || m2.isEmpty() || m3.isEmpty()) return false;
+        return m1.equals(m2) || m1.equals(m3) || m2.equals(m3);
     }
 }

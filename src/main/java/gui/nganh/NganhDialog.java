@@ -1,7 +1,9 @@
 package gui.nganh;
 
 import bus.NganhBUS;
+import bus.ToHopMonThiBUS;
 import entity.Nganh;
+import entity.ToHopMonThi;
 import gui.component.CustomButton;
 import gui.component.CustomComboBox;
 import gui.component.CustomTextField;
@@ -22,7 +24,8 @@ public class NganhDialog extends JDialog {
     private boolean isSaved = false;
 
     // --- Các trường thông tin cơ bản ---
-    private CustomTextField txtMaNganh, txtTenNganh, txtToHopGoc, txtChiTieu, txtDiemSan;
+    private CustomTextField txtMaNganh, txtTenNganh, txtChiTieu, txtDiemSan;
+    private JComboBox<String> cbxToHopGoc;
 
     // --- Checkbox phương thức xét tuyển ---
     private JCheckBox chkTuyenThang, chkDGNL, chkTHPT, chkVSAT;
@@ -76,9 +79,9 @@ public class NganhDialog extends JDialog {
         pnlForm.add(txtTenNganh);
 
         pnlForm.add(createLabel("Tổ hợp gốc"));
-        txtToHopGoc = new CustomTextField(20);
-        txtToHopGoc.setToolTipText("VD: A01, B00, C00...");
-        pnlForm.add(txtToHopGoc);
+        cbxToHopGoc = new JComboBox<>();
+        loadToHopGocData();
+        pnlForm.add(cbxToHopGoc);
 
         pnlForm.add(createLabel("Chỉ tiêu (*)"));
         txtChiTieu = new CustomTextField(20);
@@ -145,11 +148,10 @@ public class NganhDialog extends JDialog {
     // ──────────────────────────────────────────────────────
     private void fillForm() {
         txtMaNganh.setText(nganh.getMaNganh());
-        txtMaNganh.setEditable(false); // Không cho sửa mã ngành khi đang cập nhật
-        txtMaNganh.setBackground(new Color(235, 235, 235));
+        // Cho phép sửa mã ngành (BUS sẽ check trùng)
 
         txtTenNganh.setText(nganh.getTenNganh());
-        txtToHopGoc.setText(nganh.getToHopGoc() != null ? nganh.getToHopGoc() : "");
+        cbxToHopGoc.setSelectedItem(nganh.getToHopGoc());
         txtChiTieu.setText(String.valueOf(nganh.getChiTieu()));
         txtDiemSan.setText(nganh.getDiemSan() != null ? String.valueOf(nganh.getDiemSan()) : "");
 
@@ -167,7 +169,7 @@ public class NganhDialog extends JDialog {
         Nganh data = (nganh != null) ? nganh : new Nganh();
         data.setMaNganh(txtMaNganh.getText().trim());
         data.setTenNganh(txtTenNganh.getText().trim());
-        data.setToHopGoc(txtToHopGoc.getText().trim().isEmpty() ? null : txtToHopGoc.getText().trim());
+        data.setToHopGoc(cbxToHopGoc.getSelectedItem() != null ? cbxToHopGoc.getSelectedItem().toString() : null);
         data.setChiTieu(NganhBUS.parseIntSafe(txtChiTieu.getText()));
         data.setDiemSan(NganhBUS.parseDoubleSafe(txtDiemSan.getText()));
         data.setTuyenThang(chkTuyenThang.isSelected() ? "Y" : null);
@@ -208,4 +210,15 @@ public class NganhDialog extends JDialog {
     }
 
     public boolean isSaved() { return isSaved; }
+
+    private void loadToHopGocData() {
+        ToHopMonThiBUS thBus = new ToHopMonThiBUS();
+        java.util.List<ToHopMonThi> list = thBus.getAll();
+        cbxToHopGoc.addItem(""); // Option cho phép trống
+        if (list != null) {
+            for (ToHopMonThi t : list) {
+                cbxToHopGoc.addItem(t.getMaToHop());
+            }
+        }
+    }
 }

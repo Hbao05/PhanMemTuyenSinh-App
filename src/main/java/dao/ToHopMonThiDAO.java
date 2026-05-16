@@ -138,4 +138,19 @@ public class ToHopMonThiDAO {
             return null;
         }
     }
+    public boolean deleteAll() {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.createMutationQuery("DELETE FROM ToHopMonThi").executeUpdate();
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

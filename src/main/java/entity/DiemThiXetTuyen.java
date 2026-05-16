@@ -23,7 +23,7 @@ public class DiemThiXetTuyen {
     @Column(name = "d_phuongthuc")
     private String phuongThuc;
 
-    @Column(name = "TO")
+    @Column(name = "`TO`")
     private Double diemToan;
 
     @Column(name = "LI")
@@ -74,7 +74,5 @@ public class DiemThiXetTuyen {
     // ── Quan hệ: DiemThiXetTuyen N-1 ThiSinh (theo cccd) ──
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     private ThiSinh thiSinh;
 }
