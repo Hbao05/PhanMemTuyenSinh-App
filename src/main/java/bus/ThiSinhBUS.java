@@ -97,7 +97,28 @@ public class ThiSinhBUS {
 //            return "Error: ID Card (CCCD) must be between 9 and 12 characters!";
 //        }
         if (candidate.getTen() == null || candidate.getTen().trim().isEmpty()) {
-            return "Error: Candidate's first name cannot be empty!";
+            return "Error: Tên thí sinh không được để trống!";
+        }
+
+        // Kiểm tra định dạng ngày sinh dd/MM/yyyy
+        if (candidate.getNgaySinh() != null && !candidate.getNgaySinh().trim().isEmpty()) {
+            if (!candidate.getNgaySinh().trim().matches("^\\d{2}/\\d{2}/\\d{4}$")) {
+                return "Error: Ngày sinh sai định dạng (Yêu cầu: dd/MM/yyyy)!";
+            }
+        }
+
+        // Kiểm tra CCCD trùng lặp (khác ID hiện tại)
+        ThiSinh existingByCccd = thiSinhDAO.getByCccd(candidate.getCccd().trim());
+        if (existingByCccd != null && existingByCccd.getIdThiSinh() != candidate.getIdThiSinh()) {
+            return "Error: Số CCCD \"" + candidate.getCccd() + "\" đã tồn tại cho thí sinh khác!";
+        }
+
+        // Kiểm tra SBD trùng lặp (khác ID hiện tại)
+        if (candidate.getSoBaoDanh() != null && !candidate.getSoBaoDanh().trim().isEmpty()) {
+            ThiSinh existingBySbd = thiSinhDAO.getBySbd(candidate.getSoBaoDanh().trim());
+            if (existingBySbd != null && existingBySbd.getIdThiSinh() != candidate.getIdThiSinh()) {
+                return "Error: Số Báo Danh \"" + candidate.getSoBaoDanh() + "\" đã tồn tại cho thí sinh khác!";
+            }
         }
 
         boolean isSuccess = thiSinhDAO.update(candidate);
@@ -116,9 +137,21 @@ public class ThiSinhBUS {
         if (candidate.getTen() == null || candidate.getTen().trim().isEmpty()) {
             return "Error: Tên thí sinh không được để trống!";
         }
+        // Kiểm tra định dạng ngày sinh dd/MM/yyyy
+        if (candidate.getNgaySinh() != null && !candidate.getNgaySinh().trim().isEmpty()) {
+            if (!candidate.getNgaySinh().trim().matches("^\\d{2}/\\d{2}/\\d{4}$")) {
+                return "Error: Ngày sinh sai định dạng (Yêu cầu: dd/MM/yyyy)!";
+            }
+        }
         // Kiểm tra CCCD đã tồn tại chưa
         if (thiSinhDAO.checkCccdExists(candidate.getCccd().trim())) {
             return "Error: Số CCCD \"" + candidate.getCccd() + "\" đã tồn tại trong hệ thống!";
+        }
+        // Kiểm tra SBD đã tồn tại chưa
+        if (candidate.getSoBaoDanh() != null && !candidate.getSoBaoDanh().trim().isEmpty()) {
+            if (thiSinhDAO.checkSbdExists(candidate.getSoBaoDanh().trim())) {
+                return "Error: Số Báo Danh \"" + candidate.getSoBaoDanh() + "\" đã tồn tại trong hệ thống!";
+            }
         }
         boolean isSuccess = thiSinhDAO.insert(candidate);
         return isSuccess
@@ -145,33 +178,44 @@ public class ThiSinhBUS {
         return thiSinhDAO.getAllCccd();
     }
 
+    public Set<String> newImportSbdCache() {
+        return thiSinhDAO.getAllSbd();
+    }
+
     /**
      * Xử lý một lô thí sinh đọc từ Excel. Danh sách rỗng → kết quả toàn 0 (dùng khi import theo lô).
      *
      * @param existingCccdCache snapshot CCCD đã có (DB + các dòng đã duyệt); bị cập nhật khi có bản ghi mới hợp lệ trong lô.
      */
-    public ImportCandidateResult importCandidatesBatch(List<ThiSinh> importList, Set<String> existingCccdCache) {
+    public ImportCandidateResult importCandidatesBatch(List<ThiSinh> importList, Set<String> existingCccdCache, Set<String> existingSbdCache) {
         if (importList == null || importList.isEmpty()) {
             return new ImportCandidateResult();
         }
         Objects.requireNonNull(existingCccdCache, "existingCccdCache");
+        Objects.requireNonNull(existingSbdCache, "existingSbdCache");
 
         List<ThiSinh> validCandidates = new ArrayList<>();
         int duplicateCount = 0;
 
         for (ThiSinh candidate : importList) {
             String cccd = candidate.getCccd();
+            String sbd = candidate.getSoBaoDanh();
 
             if (cccd == null || cccd.trim().isEmpty()) {
                 duplicateCount++;
                 continue;
             }
 
-            if (existingCccdCache.contains(cccd)) {
+            boolean hasSbd = sbd != null && !sbd.trim().isEmpty();
+
+            if (existingCccdCache.contains(cccd) || (hasSbd && existingSbdCache.contains(sbd))) {
                 duplicateCount++;
             } else {
                 validCandidates.add(candidate);
                 existingCccdCache.add(cccd);
+                if (hasSbd) {
+                    existingSbdCache.add(sbd);
+                }
             }
         }
 
@@ -188,7 +232,7 @@ public class ThiSinhBUS {
         if (importList == null || importList.isEmpty()) {
             return "Lỗi: Danh sách import trống hoặc file Excel không có dữ liệu!";
         }
-        return importCandidatesBatch(importList, thiSinhDAO.getAllCccd()).formatMessage();
+        return importCandidatesBatch(importList, thiSinhDAO.getAllCccd(), thiSinhDAO.getAllSbd()).formatMessage();
     }
 
     public List<Object[]> countByDoiTuong() {

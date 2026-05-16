@@ -30,10 +30,11 @@ public class ExcelUtil {
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
             DataFormatter dataFormatter = new DataFormatter();
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
             for (int start = 1; start <= lastRowNum; start += batchSize) {
                 int end = Math.min(start + batchSize - 1, lastRowNum);
-                List<ThiSinh> batch = readCandidateRows(sheet, dataFormatter, start, end);
+                List<ThiSinh> batch = readCandidateRows(sheet, dataFormatter, evaluator, start, end);
                 onBatch.accept(batch);
             }
         } catch (Exception e) {
@@ -42,6 +43,7 @@ public class ExcelUtil {
     }
 
     private static List<ThiSinh> readCandidateRows(Sheet sheet, DataFormatter dataFormatter,
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator,
             int fromRowInclusive, int toRowInclusive) {
         List<ThiSinh> list = new ArrayList<>();
         for (int i = fromRowInclusive; i <= toRowInclusive; i++) {
@@ -49,7 +51,7 @@ public class ExcelUtil {
             if (row == null) {
                 continue;
             }
-            ThiSinh ts = rowToThiSinh(row, dataFormatter);
+            ThiSinh ts = rowToThiSinh(row, dataFormatter, evaluator);
             if (ts != null) {
                 list.add(ts);
             }
@@ -62,21 +64,21 @@ public class ExcelUtil {
      * Thứ tự cột: cccd, sbd, họ, tên, ngày sinh, điện thoại, giới tính, email, nơi
      * sinh, đối tượng, khu vực.
      */
-    private static ThiSinh rowToThiSinh(Row row, DataFormatter dataFormatter) {
-        String cccd = dataFormatter.formatCellValue(row.getCell(0)).trim();
+    private static ThiSinh rowToThiSinh(Row row, DataFormatter dataFormatter, org.apache.poi.ss.usermodel.FormulaEvaluator evaluator) {
+        String cccd = dataFormatter.formatCellValue(row.getCell(0), evaluator).trim();
         if (cccd.isEmpty()) {
             return null;
         }
-        String soBaoDanh = dataFormatter.formatCellValue(row.getCell(1)).trim();
-        String ho = dataFormatter.formatCellValue(row.getCell(2)).trim();
-        String ten = dataFormatter.formatCellValue(row.getCell(3)).trim();
-        String dob = dataFormatter.formatCellValue(row.getCell(4)).trim();
-        String phone = dataFormatter.formatCellValue(row.getCell(5)).trim();
-        String gender = dataFormatter.formatCellValue(row.getCell(6)).trim();
-        String email = dataFormatter.formatCellValue(row.getCell(7)).trim();
-        String birthPlace = dataFormatter.formatCellValue(row.getCell(8)).trim();
-        String priorityObj = dataFormatter.formatCellValue(row.getCell(9)).trim();
-        String priorityZone = dataFormatter.formatCellValue(row.getCell(10)).trim();
+        String soBaoDanh = dataFormatter.formatCellValue(row.getCell(1), evaluator).trim();
+        String ho = dataFormatter.formatCellValue(row.getCell(2), evaluator).trim();
+        String ten = dataFormatter.formatCellValue(row.getCell(3), evaluator).trim();
+        String dob = dataFormatter.formatCellValue(row.getCell(4), evaluator).trim();
+        String phone = dataFormatter.formatCellValue(row.getCell(5), evaluator).trim();
+        String gender = dataFormatter.formatCellValue(row.getCell(6), evaluator).trim();
+        String email = dataFormatter.formatCellValue(row.getCell(7), evaluator).trim();
+        String birthPlace = dataFormatter.formatCellValue(row.getCell(8), evaluator).trim();
+        String priorityObj = dataFormatter.formatCellValue(row.getCell(9), evaluator).trim();
+        String priorityZone = dataFormatter.formatCellValue(row.getCell(10), evaluator).trim();
 
         ThiSinh ts = new ThiSinh();
         ts.setCccd(cccd);
@@ -108,8 +110,9 @@ public class ExcelUtil {
 
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
             if (lastRowNum >= 1) {
-                candidateList = readCandidateRows(sheet, dataFormatter, 1, lastRowNum);
+                candidateList = readCandidateRows(sheet, dataFormatter, evaluator, 1, lastRowNum);
             }
         } catch (Exception e) {
             System.err.println("Lỗi khi đọc file Excel: " + e.getMessage());
@@ -127,6 +130,7 @@ public class ExcelUtil {
                 Workbook wb = new XSSFWorkbook(fis)) {
 
             Sheet sheet = wb.getSheetAt(0);
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
 
             // Xác định dòng bắt đầu dữ liệu và định dạng
             Row firstRow = sheet.getRow(0);
@@ -134,7 +138,7 @@ public class ExcelUtil {
             boolean isNewFormat = false;
 
             if (firstRow != null && firstRow.getCell(0) != null) {
-                String firstColStr = fmt.formatCellValue(firstRow.getCell(0)).trim();
+                String firstColStr = fmt.formatCellValue(firstRow.getCell(0), evaluator).trim();
                 if (firstColStr.equalsIgnoreCase("Mã Ngành")) {
                     isNewFormat = true;
                 } else if (firstColStr.isEmpty() || !isNumeric(firstColStr)) {
@@ -150,29 +154,29 @@ public class ExcelUtil {
                     if (row == null)
                         continue;
 
-                    String ma = fmt.formatCellValue(row.getCell(0)).trim();
+                    String ma = fmt.formatCellValue(row.getCell(0), evaluator).trim();
                     if (ma.isEmpty())
                         continue;
 
-                    String ten = fmt.formatCellValue(row.getCell(1)).trim();
-                    String toHop = fmt.formatCellValue(row.getCell(2)).trim();
+                    String ten = fmt.formatCellValue(row.getCell(1), evaluator).trim();
+                    String toHop = fmt.formatCellValue(row.getCell(2), evaluator).trim();
                     if (toHop.contains("(")) {
                         toHop = toHop.substring(0, toHop.indexOf("(")).trim();
                     }
 
-                    int chiTieu = parseIntSafe(fmt.formatCellValue(row.getCell(4)).trim());
-                    Double diemSan = parseDoubleSafe(fmt.formatCellValue(row.getCell(5)).trim());
-                    Double diemTrungTuyen = parseDoubleSafe(fmt.formatCellValue(row.getCell(6)).trim());
+                    int chiTieu = parseIntSafe(fmt.formatCellValue(row.getCell(4), evaluator).trim());
+                    Double diemSan = parseDoubleSafe(fmt.formatCellValue(row.getCell(5), evaluator).trim());
+                    Double diemTrungTuyen = parseDoubleSafe(fmt.formatCellValue(row.getCell(6), evaluator).trim());
 
-                    String xtt = parseFlag(fmt.formatCellValue(row.getCell(7)).trim());
-                    String dgnl = parseFlag(fmt.formatCellValue(row.getCell(8)).trim());
-                    String thpt = parseFlag(fmt.formatCellValue(row.getCell(9)).trim());
-                    String vsat = parseFlag(fmt.formatCellValue(row.getCell(10)).trim());
+                    String xtt = parseFlag(fmt.formatCellValue(row.getCell(7), evaluator).trim());
+                    String dgnl = parseFlag(fmt.formatCellValue(row.getCell(8), evaluator).trim());
+                    String thpt = parseFlag(fmt.formatCellValue(row.getCell(9), evaluator).trim());
+                    String vsat = parseFlag(fmt.formatCellValue(row.getCell(10), evaluator).trim());
 
-                    Integer slXtt = parseIntegerSafe(fmt.formatCellValue(row.getCell(11)).trim());
-                    Integer slDgnl = parseIntegerSafe(fmt.formatCellValue(row.getCell(12)).trim());
-                    Integer slVsat = parseIntegerSafe(fmt.formatCellValue(row.getCell(13)).trim());
-                    Integer slThpt = parseIntegerSafe(fmt.formatCellValue(row.getCell(14)).trim());
+                    Integer slXtt = parseIntegerSafe(fmt.formatCellValue(row.getCell(11), evaluator).trim());
+                    Integer slDgnl = parseIntegerSafe(fmt.formatCellValue(row.getCell(12), evaluator).trim());
+                    Integer slVsat = parseIntegerSafe(fmt.formatCellValue(row.getCell(13), evaluator).trim());
+                    Integer slThpt = parseIntegerSafe(fmt.formatCellValue(row.getCell(14), evaluator).trim());
 
                     Nganh n = new Nganh();
                     n.setMaNganh(ma);
@@ -194,7 +198,7 @@ public class ExcelUtil {
             } else {
                 // Kiểm tra xem có phải file ngành cũ không
                 if (firstRow != null && firstRow.getCell(1) != null) {
-                    String col1 = fmt.formatCellValue(firstRow.getCell(1)).trim();
+                    String col1 = fmt.formatCellValue(firstRow.getCell(1), evaluator).trim();
                     if (!col1.equalsIgnoreCase("Mã ngành") && !col1.equalsIgnoreCase("Ma nganh") && !col1.isEmpty()) {
                         if (!isNumeric(col1)) {
                             // Cột 1 không phải Mã ngành mà là chữ -> Khả năng cao sai file
@@ -211,12 +215,12 @@ public class ExcelUtil {
                     if (row == null)
                         continue;
 
-                    String ma = fmt.formatCellValue(row.getCell(1)).trim();
-                    String ten = fmt.formatCellValue(row.getCell(2)).trim();
+                    String ma = fmt.formatCellValue(row.getCell(1), evaluator).trim();
+                    String ten = fmt.formatCellValue(row.getCell(2), evaluator).trim();
                     if (ma.isEmpty() || ten.isEmpty())
                         continue;
 
-                    String chiTieuStr = fmt.formatCellValue(row.getCell(3)).trim();
+                    String chiTieuStr = fmt.formatCellValue(row.getCell(3), evaluator).trim();
                     int chiTieu = parseIntSafe(chiTieuStr);
 
                     Nganh n = new Nganh();
@@ -246,6 +250,7 @@ public class ExcelUtil {
                 Workbook wb = new XSSFWorkbook(fis)) {
 
             Sheet sheet = wb.getSheetAt(0);
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
 
             Row firstRow = sheet.getRow(0);
             if (firstRow == null || firstRow.getCell(0) == null) {
@@ -255,8 +260,8 @@ public class ExcelUtil {
 
             // Hỗ trợ đọc trực tiếp từ file docs/tohopmon.xlsx gốc
             if (col0.equalsIgnoreCase("STT")
-                    && fmt.formatCellValue(firstRow.getCell(1)).trim().equalsIgnoreCase("MANGANH")) {
-                return processLegacyToHopExcel(sheet, fmt);
+                    && fmt.formatCellValue(firstRow.getCell(1), evaluator).trim().equalsIgnoreCase("MANGANH")) {
+                return processLegacyToHopExcel(sheet, fmt, evaluator);
             }
 
             if (!col0.equalsIgnoreCase("Mã tổ hợp") && !col0.equalsIgnoreCase("Ma to hop")) {
@@ -271,21 +276,27 @@ public class ExcelUtil {
                     continue;
 
                 // Các cột: 0: Mã tổ hợp, 1: Môn 1, 2: Môn 2, 3: Môn 3, 4: Tên tổ hợp
-                String maToHop = fmt.formatCellValue(row.getCell(0)).trim();
+                String maToHop = fmt.formatCellValue(row.getCell(0), evaluator).trim();
                 if (maToHop.isEmpty())
                     continue;
 
-                String mon1 = fmt.formatCellValue(row.getCell(1)).trim();
-                String mon2 = fmt.formatCellValue(row.getCell(2)).trim();
-                String mon3 = fmt.formatCellValue(row.getCell(3)).trim();
-                String tenToHop = fmt.formatCellValue(row.getCell(4)).trim();
+                String mon1 = fmt.formatCellValue(row.getCell(1), evaluator).trim().toUpperCase();
+                String mon2 = fmt.formatCellValue(row.getCell(2), evaluator).trim().toUpperCase();
+                String mon3 = fmt.formatCellValue(row.getCell(3), evaluator).trim().toUpperCase();
+                String tenToHop = fmt.formatCellValue(row.getCell(4), evaluator).trim();
 
                 ToHopMonThi t = new ToHopMonThi();
                 t.setMaToHop(maToHop);
                 t.setMon1(mon1);
                 t.setMon2(mon2);
                 t.setMon3(mon3);
-                t.setTenToHop(tenToHop.isEmpty() ? null : tenToHop);
+                
+                if (tenToHop.isEmpty()) {
+                    tenToHop = SubjectUtil.getSubjectName(mon1) + " - " + 
+                               SubjectUtil.getSubjectName(mon2) + " - " + 
+                               SubjectUtil.getSubjectName(mon3);
+                }
+                t.setTenToHop(tenToHop);
 
                 list.add(t);
             }
@@ -301,7 +312,7 @@ public class ExcelUtil {
         return list;
     }
 
-    public static List<ToHopMonThi> processLegacyToHopExcel(Sheet sheet, DataFormatter fmt) {
+    public static List<ToHopMonThi> processLegacyToHopExcel(Sheet sheet, DataFormatter fmt, org.apache.poi.ss.usermodel.FormulaEvaluator evaluator) {
         java.util.Map<String, ToHopMonThi> map = new java.util.HashMap<>();
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
@@ -309,7 +320,7 @@ public class ExcelUtil {
                 continue;
 
             // Trong file gốc, MA_TO_HOP nằm ở cột 3 (index 3)
-            String maToHopRaw = fmt.formatCellValue(row.getCell(3)).trim();
+            String maToHopRaw = fmt.formatCellValue(row.getCell(3), evaluator).trim();
             if (maToHopRaw.isEmpty())
                 continue;
 
@@ -325,12 +336,18 @@ public class ExcelUtil {
             String inside = maToHopRaw.substring(openIdx + 1, closeIdx);
             String[] parts = inside.split(",");
             if (parts.length >= 3) {
+                String m1 = parts[0].split("-")[0].trim().toUpperCase();
+                String m2 = parts[1].split("-")[0].trim().toUpperCase();
+                String m3 = parts[2].split("-")[0].trim().toUpperCase();
+
                 ToHopMonThi t = new ToHopMonThi();
                 t.setMaToHop(ma);
-                t.setMon1(mapSubjectName(parts[0].split("-")[0].trim()));
-                t.setMon2(mapSubjectName(parts[1].split("-")[0].trim()));
-                t.setMon3(mapSubjectName(parts[2].split("-")[0].trim()));
-                t.setTenToHop(t.getMon1() + "," + t.getMon2() + "," + t.getMon3());
+                t.setMon1(m1);
+                t.setMon2(m2);
+                t.setMon3(m3);
+                t.setTenToHop(SubjectUtil.getSubjectName(m1) + " - " + 
+                              SubjectUtil.getSubjectName(m2) + " - " + 
+                              SubjectUtil.getSubjectName(m3));
                 map.put(ma, t);
             }
         }
@@ -338,47 +355,7 @@ public class ExcelUtil {
         return new java.util.ArrayList<>(map.values());
     }
 
-    private static String mapSubjectName(String code) {
-        switch (code.toUpperCase()) {
-            case "TO":
-                return "Toán";
-            case "VA":
-                return "Ngữ văn";
-            case "LI":
-                return "Vật lí";
-            case "HO":
-                return "Hóa học";
-            case "SI":
-                return "Sinh học";
-            case "SU":
-                return "Lịch sử";
-            case "DI":
-                return "Địa lí";
-            case "N1":
-            case "TI":
-                return "Tiếng Anh";
-            case "KTPL":
-                return "Giáo dục KTPL";
-            case "CNCN":
-                return "Công nghệ (Công nghiệp)";
-            case "CNNN":
-                return "Công nghệ (Nông nghiệp)";
-            case "NK1":
-                return "Năng khiếu 1";
-            case "NK2":
-                return "Năng khiếu 2";
-            case "NK3":
-                return "Năng khiếu 3";
-            case "NK4":
-                return "Năng khiếu 4";
-            case "NK5":
-                return "Năng khiếu 5";
-            case "NK6":
-                return "Năng khiếu 6";
-            default:
-                return code;
-        }
-    }
+
 
     private static boolean isNumeric(String s) {
         try {
@@ -437,6 +414,7 @@ public class ExcelUtil {
                 Workbook wb = new XSSFWorkbook(fis)) {
 
             Sheet sheet = wb.getSheetAt(0);
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
             Row firstRow = sheet.getRow(0);
 
             if (firstRow == null || firstRow.getCell(0) == null) {
@@ -444,8 +422,8 @@ public class ExcelUtil {
             }
 
             // Kiểm tra format: Cột 0 = STT, Cột 1 = MANGANH
-            String col0 = fmt.formatCellValue(firstRow.getCell(0)).trim();
-            String col1 = fmt.formatCellValue(firstRow.getCell(1)).trim();
+            String col0 = fmt.formatCellValue(firstRow.getCell(0), evaluator).trim();
+            String col1 = fmt.formatCellValue(firstRow.getCell(1), evaluator).trim();
             if (!col0.equalsIgnoreCase("STT") || !col1.equalsIgnoreCase("MANGANH")) {
                 throw new IllegalArgumentException(
                         "File sai định dạng! File Ngành-Tổ hợp phải có cột STT, MANGANH.\n" +
@@ -459,26 +437,26 @@ public class ExcelUtil {
                     continue;
 
                 // Cột 1: MANGANH
-                String maNganh = fmt.formatCellValue(row.getCell(1)).trim();
+                String maNganh = fmt.formatCellValue(row.getCell(1), evaluator).trim();
                 if (maNganh.isEmpty())
                     continue;
 
                 // Cột 3: MA_TO_HOP dạng "B03(TO-3,VA-3,SI-1)"
-                String maToHopRaw = fmt.formatCellValue(row.getCell(3)).trim();
+                String maToHopRaw = fmt.formatCellValue(row.getCell(3), evaluator).trim();
                 if (maToHopRaw.isEmpty())
                     continue;
 
                 // Cột 4: tb_keys dạng "7140114_B03"
-                String tbKeys = fmt.formatCellValue(row.getCell(4)).trim();
+                String tbKeys = fmt.formatCellValue(row.getCell(4), evaluator).trim();
 
                 // Cột 5: TEN_TO_HOP (mã tổ hợp thuần, ví dụ: B03)
-                String maToHop = fmt.formatCellValue(row.getCell(5)).trim();
+                String maToHop = fmt.formatCellValue(row.getCell(5), evaluator).trim();
 
                 // Cột 6: Gốc
                 // (không cần lưu vào entity, bỏ qua)
 
                 // Cột 7: Độ lệch
-                Double doLech = parseDoubleSafe(fmt.formatCellValue(row.getCell(7)).trim());
+                Double doLech = parseDoubleSafe(fmt.formatCellValue(row.getCell(7), evaluator).trim());
 
                 // Bóc tách thông tin môn học và hệ số từ MA_TO_HOP
                 NganhToHop item = new NganhToHop();

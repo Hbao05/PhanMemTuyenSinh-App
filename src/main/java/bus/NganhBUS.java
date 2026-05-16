@@ -71,6 +71,9 @@ public class NganhBUS {
         if (nganh.getChiTieu() < 0) {
             return "Error: Chỉ tiêu không được âm!";
         }
+        if (nganh.getDiemSan() != null && (nganh.getDiemSan() < 0 || nganh.getDiemSan() > 30)) {
+            return "Error: Điểm sàn phải nằm trong khoảng từ 0 đến 30!";
+        }
         if (nganhDAO.existsByMaNganh(nganh.getMaNganh().trim())) {
             return "Error: Mã ngành \"" + nganh.getMaNganh() + "\" đã tồn tại!";
         }
@@ -92,6 +95,15 @@ public class NganhBUS {
         if (nganh.getChiTieu() < 0) {
             return "Error: Chỉ tiêu không được âm!";
         }
+        if (nganh.getDiemSan() != null && (nganh.getDiemSan() < 0 || nganh.getDiemSan() > 30)) {
+            return "Error: Điểm sàn phải nằm trong khoảng từ 0 đến 30!";
+        }
+        // Kiểm tra trùng mã ngành (nếu đổi mã)
+        Nganh existing = nganhDAO.getByMaNganh(nganh.getMaNganh().trim());
+        if (existing != null && existing.getIdNganh() != nganh.getIdNganh()) {
+            return "Error: Mã ngành \"" + nganh.getMaNganh() + "\" đã bị trùng với ngành khác!";
+        }
+
         boolean ok = nganhDAO.update(nganh);
         return ok ? "Success" : "Error: Không thể cập nhật cơ sở dữ liệu!";
     }
@@ -99,8 +111,17 @@ public class NganhBUS {
     // ── XÓA ───────────────────────────────────────────────
     public String deleteNganh(int id) {
         if (id <= 0) return "Error: Không xác định được ngành cần xóa!";
-        boolean ok = nganhDAO.delete(id);
-        return ok ? "Success" : "Error: Không thể xóa. Ngành có thể đang được liên kết dữ liệu.";
+        try {
+            boolean ok = nganhDAO.delete(id);
+            return ok ? "Success" : "Error: Không thể xóa ngành này.";
+        } catch (RuntimeException e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    // ── LẤY SỐ LƯỢNG ĐĂNG KÝ ──────────────────────────────
+    public long getSoLuongDangKy(String maNganh) {
+        return nganhDAO.countNguyenVongByMaNganh(maNganh);
     }
 
     // ── HELPER PARSE ─────────────────────────────────────
