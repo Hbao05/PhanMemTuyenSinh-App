@@ -116,7 +116,7 @@ public class QuanLyDiemCongPanel extends JPanel {
 
     // ── TABLE ────────────────────────────────────────────────────────────
     private void buildTable() {
-        String[] cols = {"ID", "CCCD", "Họ tên thí sinh", "Mã ngành", "Mã tổ hợp",
+        String[] cols = {"ID", "CCCD", "Mã điểm cộng", "Mã ngành", "Mã tổ hợp",
                          "Phương thức", "Điểm CC", "Điểm UTXT", "Tổng", "Ghi chú"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -339,12 +339,11 @@ public class QuanLyDiemCongPanel extends JPanel {
         for (DiemCongXetTuyen dc : list) {
             String hoTen = "";
             ThiSinh ts = dc.getThiSinh();
-            if (ts != null) hoTen = ts.getHo() + " " + ts.getTen();
 
             tableModel.addRow(new Object[]{
                     dc.getIdDiemCong(),
                     dc.getCccd()       != null ? dc.getCccd()       : "",
-                    hoTen,
+                    dc.getDcKeys()     != null ? dc.getDcKeys()     : "",
                     dc.getMaNganh()    != null ? dc.getMaNganh()    : "",
                     dc.getMaToHop()    != null ? dc.getMaToHop()    : "",
                     dc.getPhuongThuc() != null ? dc.getPhuongThuc() : "",

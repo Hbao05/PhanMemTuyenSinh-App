@@ -126,8 +126,7 @@ public class DiemCongBUS {
 
         // dcKeys = cccd|maNganh|maToHop|phuongThuc
         String toHop = dc.getMaToHop()    != null ? dc.getMaToHop()    : "";
-        String pt    = dc.getPhuongThuc() != null ? dc.getPhuongThuc() : "";
-        dc.setDcKeys(dc.getCccd() + "|" + dc.getMaNganh() + "|" + toHop + "|" + pt);
+        dc.setDcKeys(dc.getCccd() + "_" + dc.getMaNganh() + "_" + toHop);
     }
 
     // ── IMPORT EXCEL ─────────────────────────────────────
