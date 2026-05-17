@@ -15,6 +15,8 @@ import javax.swing.border.MatteBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.List;
 
@@ -268,6 +270,7 @@ public class QuanLyDiemCongPanel extends JPanel {
             
             progressDialog.add(lblStatus, BorderLayout.NORTH);
             progressDialog.add(centerPanel, BorderLayout.CENTER);
+            progressDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
             
             SwingWorker<Void, String> worker = new SwingWorker<>() {
                 private int finalSuccess = 0;
@@ -276,21 +279,32 @@ public class QuanLyDiemCongPanel extends JPanel {
 
                 @Override
                 protected Void doInBackground() {
+
                     bus.importFromExcel(file, (processed, success, message) -> {
+
+                        if (isCancelled()) {
+                            return;
+                        }
+
                         finalTotal = processed;
                         finalSuccess = success;
+
                         if (message.startsWith("Lỗi")) {
                             errorMessage = message;
                         }
-                        publish("Đã đọc: " + processed + " | Thành công: " + success + " (" + message + ")");
+
+                        publish("Đã đọc: " + processed +
+                                " | Thành công: " + success +
+                                " (" + message + ")");
                     });
+
                     return null;
                 }
 
                 @Override
                 protected void process(List<String> chunks) {
                     if (!chunks.isEmpty()) {
-                        String latestMessage = chunks.get(chunks.size() - 1);
+                        String latestMessage = chunks.getLast();
                         lblStatus.setText(latestMessage);
                         progressBar.setString(latestMessage);
                     }
@@ -298,19 +312,65 @@ public class QuanLyDiemCongPanel extends JPanel {
 
                 @Override
                 protected void done() {
+
                     progressDialog.dispose();
+
+                    currentPage = 1;
+                    loadData();
+
+                    if (isCancelled()) {
+
+                        JOptionPane.showMessageDialog(
+                                QuanLyDiemCongPanel.this,
+                                "Đã dừng import!\n" +
+                                        "Các dữ liệu đã xử lý vẫn được lưu.",
+                                "Thông báo",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+
+                        return;
+                    }
+
                     if (errorMessage != null) {
-                        JOptionPane.showMessageDialog(QuanLyDiemCongPanel.this, errorMessage, "Lỗi Import", JOptionPane.ERROR_MESSAGE);
+
+                        JOptionPane.showMessageDialog(
+                                QuanLyDiemCongPanel.this,
+                                errorMessage,
+                                "Lỗi Import",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+
                     } else {
-                        JOptionPane.showMessageDialog(QuanLyDiemCongPanel.this, 
-                            "Import thành công!\nTổng dòng đã đọc: " + finalTotal + "\nSố dòng thêm/cập nhật: " + finalSuccess, 
-                            "Hoàn thành", JOptionPane.INFORMATION_MESSAGE);
-                        currentPage = 1;
-                        loadData();
+
+                        JOptionPane.showMessageDialog(
+                                QuanLyDiemCongPanel.this,
+                                "Import thành công!\n" +
+                                        "Tổng dòng đã đọc: " + finalTotal +
+                                        "\nSố dòng thêm/cập nhật: " + finalSuccess,
+                                "Hoàn thành",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
                     }
                 }
             };
-            
+
+            progressDialog.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+
+                    int confirm = JOptionPane.showConfirmDialog(
+                            progressDialog,
+                            "Bạn muốn dừng import?",
+                            "Xác nhận",
+                            JOptionPane.YES_NO_OPTION
+                    );
+
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        worker.cancel(true);
+                        progressDialog.dispose();
+                    }
+                }
+            });
             worker.execute();
             progressDialog.setVisible(true); // Blocks until disposed
         }

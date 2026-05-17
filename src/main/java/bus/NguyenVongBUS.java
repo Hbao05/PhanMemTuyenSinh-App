@@ -5,6 +5,16 @@ import entity.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import com.github.pjfanning.xlsx.StreamingReader;
 
 public class NguyenVongBUS {
 
@@ -98,7 +108,7 @@ public class NguyenVongBUS {
     private void autoFill(NguyenVongXetTuyen nv) {
         nv.setCccd(nv.getCccd().trim());
         nv.setMaNganh(nv.getMaNganh().trim());
-        nv.setNvKeys(nv.getCccd() + "|" + nv.getMaNganh());
+        nv.setNvKeys(nv.getCccd() + "_" + nv.getMaNganh() + "_" + nv.getPhuongThuc());
     }
 
     // ── CHẠY XÉT TUYỂN ───────────────────────────────────
@@ -183,5 +193,118 @@ public class NguyenVongBUS {
         List<Nganh> all = nganhDAO.getAll();
         if (all == null) return Map.of();
         return all.stream().collect(Collectors.toMap(Nganh::getMaNganh, n -> n, (a, b) -> a));
+    }
+
+    // ── IMPORT EXCEL ─────────────────────────────────────
+    public interface ProgressCallback {
+        void onProgress(int processed, int success, String message);
+    }
+
+    public void importFromExcel(File file, ProgressCallback callback) {
+        int batchSize = 5000;
+        List<NguyenVongXetTuyen> batch = new ArrayList<>(batchSize);
+        int totalProcessed = 0;
+        int totalSuccess = 0;
+        
+        try (InputStream is = new FileInputStream(file);
+             Workbook workbook = StreamingReader.builder()
+                     .rowCacheSize(100)
+                     .bufferSize(4096)
+                     .open(is)) {
+            
+            for (Sheet sheet : workbook) {
+                for (Row row : sheet) {
+                    if (row.getRowNum() == 0) continue; // Skip header
+
+                    try {
+                        String cccd = getCellValue(row.getCell(0));
+                        if (cccd == null || cccd.isBlank()) continue;
+                        
+                        NguyenVongXetTuyen nv = new NguyenVongXetTuyen();
+                        nv.setCccd(cccd.trim());
+                        nv.setMaNganh(getCellValue(row.getCell(1)));
+                        
+                        String ttnvStr = getCellValue(row.getCell(2));
+                        if (ttnvStr != null && !ttnvStr.isBlank()) {
+                            nv.setThuTuNguyenVong((int) Double.parseDouble(ttnvStr));
+                        }
+                        
+                        String diemThStr = getCellValue(row.getCell(3));
+                        if (diemThStr != null && !diemThStr.isBlank()) {
+                            nv.setDiemThxt(Double.parseDouble(diemThStr));
+                        }
+                        
+                        String diemUtStr = getCellValue(row.getCell(4));
+                        if (diemUtStr != null && !diemUtStr.isBlank()) {
+                            nv.setDiemUtqd(Double.parseDouble(diemUtStr));
+                        }
+                        
+                        String diemCongStr = getCellValue(row.getCell(5));
+                        if (diemCongStr != null && !diemCongStr.isBlank()) {
+                            nv.setDiemCong(Double.parseDouble(diemCongStr));
+                        }
+                        
+                        String diemXtStr = getCellValue(row.getCell(6));
+                        if (diemXtStr != null && !diemXtStr.isBlank()) {
+                            nv.setDiemXetTuyen(Double.parseDouble(diemXtStr));
+                        }
+                        
+                        nv.setKetQua(getCellValue(row.getCell(7)));
+                        nv.setPhuongThuc(getCellValue(row.getCell(9)));
+                        nv.setToHopMon(getCellValue(row.getCell(10)));
+                        
+                        autoFill(nv); // Tạo keys: cccd|maNganh
+                        
+                        batch.add(nv);
+                        totalProcessed++;
+                        
+                        if (batch.size() >= batchSize) {
+                            int success = dao.batchInsert(batch);
+                            totalSuccess += success;
+                            batch.clear();
+                            if (callback != null) {
+                                callback.onProgress(totalProcessed, totalSuccess, "Đang xử lý...");
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.err.println("Lỗi dòng " + row.getRowNum() + ": " + ex.getMessage());
+                    }
+                }
+            }
+            
+            if (!batch.isEmpty()) {
+                int success = dao.batchInsert(batch);
+                totalSuccess += success;
+                if (callback != null) {
+                    callback.onProgress(totalProcessed, totalSuccess, "Đang xử lý...");
+                }
+            }
+            
+            if (callback != null) {
+                callback.onProgress(totalProcessed, totalSuccess, "Hoàn thành!");
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (callback != null) {
+                callback.onProgress(totalProcessed, totalSuccess, "Lỗi: " + e.getMessage());
+            }
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING: return cell.getStringCellValue().trim();
+            case NUMERIC: 
+                double val = cell.getNumericCellValue();
+                if (val == (long) val) {
+                    return String.format("%d", (long) val);
+                } else {
+                    return String.valueOf(val);
+                }
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default: return "";
+        }
     }
 }

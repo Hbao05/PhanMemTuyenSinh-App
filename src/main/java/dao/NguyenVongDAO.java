@@ -168,4 +168,45 @@ public class NguyenVongDAO {
             return false;
         }
     }
+
+    // ── BATCH INSERT (Cho Import Excel) ──────────────────
+    public int batchInsert(List<NguyenVongXetTuyen> list) {
+        Transaction tx = null;
+        int successCount = 0;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            for (int i = 0; i < list.size(); i++) {
+                session.persist(list.get(i));
+                successCount++;
+                if (i > 0 && i % 50 == 0) { session.flush(); session.clear(); }
+            }
+            tx.commit();
+            return successCount;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            System.err.println("Lỗi batch insert. Chuyển sang insert từng dòng (fallback)...");
+            return fallbackSingleInsert(list);
+        }
+    }
+
+    private int fallbackSingleInsert(List<NguyenVongXetTuyen> list) {
+        int successCount = 0;
+        for (NguyenVongXetTuyen nv : list) {
+            Transaction tx = null;
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                tx = session.beginTransaction();
+                // Khi batchInsert fail và rollback, các entity đã được persist trước lỗi
+                // vẫn bị giữ lại ID đã generate. Ta cần reset ID về 0 để Hibernate hiểu đây là entity mới.
+                nv.setIdNv(0);
+                session.persist(nv);
+                tx.commit();
+                successCount++;
+            } catch (Exception e) {
+                if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ex) {}
+                String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+                System.err.println("Bỏ qua dòng lỗi (CCCD: " + nv.getCccd() + ", Ngành: " + nv.getMaNganh() + ") - Lý do: " + reason);
+            }
+        }
+        return successCount;
+    }
 }
