@@ -74,7 +74,7 @@ public class ThemThiSinhDialog extends JDialog {
         pnlForm.add(txtNgaySinh);
 
         pnlForm.add(createLabel("Giới tính"));
-        cbxGioiTinh = new CustomComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
+        cbxGioiTinh = new CustomComboBox<>(new String[] { "Nam", "Nữ", "Khác" });
         pnlForm.add(cbxGioiTinh);
 
         pnlForm.add(createLabel("Nơi sinh"));
@@ -104,7 +104,7 @@ public class ThemThiSinhDialog extends JDialog {
         pnlButtons.setOpaque(false);
 
         CustomButton btnCancel = new CustomButton("Hủy bỏ", UIConstants.DANGER_COLOR);
-        CustomButton btnSave   = new CustomButton("Thêm mới", UIConstants.SUCCESS_COLOR);
+        CustomButton btnSave = new CustomButton("Thêm mới", UIConstants.SUCCESS_COLOR);
 
         btnCancel.addActionListener(e -> dispose());
         btnSave.addActionListener(e -> saveNewCandidate());
@@ -130,9 +130,11 @@ public class ThemThiSinhDialog extends JDialog {
         ts.setTen(txtTen.getText().trim());
         ts.setNgaySinh(txtNgaySinh.getText().trim());
         ts.setGioiTinh(cbxGioiTinh.getSelectedItem() != null
-                ? cbxGioiTinh.getSelectedItem().toString() : "Nam");
+                ? cbxGioiTinh.getSelectedItem().toString()
+                : "Nam");
         ts.setNoiSinh(cbxNoiSinh.getSelectedItem() != null
-                ? cbxNoiSinh.getSelectedItem().toString() : "Hà Nội");
+                ? cbxNoiSinh.getSelectedItem().toString()
+                : "Hà Nội");
         ts.setDienThoai(txtDienThoai.getText().trim());
         ts.setEmail(txtEmail.getText().trim());
         ts.setDoiTuong(txtDoiTuong.getText().trim());
