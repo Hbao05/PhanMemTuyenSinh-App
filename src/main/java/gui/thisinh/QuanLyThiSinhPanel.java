@@ -454,7 +454,7 @@ public class QuanLyThiSinhPanel extends JPanel {
         pnlScores.setOpaque(false);
         pnlScores.setBorder(new EmptyBorder(10, 15, 10, 15));
 
-        entity.DiemThiXetTuyen dt = ts.getDiemThi();
+        entity.DiemThiXetTuyen dt = ts.getDiemThi().getFirst();
         String[][] rowsScores;
         if (dt != null) {
             rowsScores = new String[][] {

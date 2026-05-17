@@ -113,35 +113,122 @@ public class NguyenVongBUS {
 
     // ── CHẠY XÉT TUYỂN ───────────────────────────────────
     /**
-     * Tải toàn bộ dữ liệu cần thiết, chạy engine, lưu kết quả về DB.
-     * callback.update(done, total) được gọi sau mỗi NV xử lý.
+     * Tải toàn bộ dữ liệu cần thiết vào HashMap, chạy engine, lưu kết quả về DB.
+     * Dữ liệu nhỏ (BangQuyDoi, NganhToHop, Nganh, ThiSinh) → load 1 lần vào HashMap.
+     * Dữ liệu lớn (NguyenVong, DiemCong) → load all nhưng index bằng HashMap.
      */
     public String runXetTuyen(XetTuyenEngine.ProgressCallback callback) {
         try {
+            if (callback != null) callback.update(0, 0, "Đang tải dữ liệu...");
+
+            // ── Pre-load tất cả dữ liệu vào HashMap ──
             List<NguyenVongXetTuyen> allNV = dao.getAll();
             if (allNV.isEmpty()) return "Error: Khong co nguyen vong nao de xet!";
 
-            // Load dữ liệu hỗ trợ
-            Map<String, DiemThiXetTuyen>  diemThiMap  = buildDiemThiMap(allNV);
-            Map<String, NganhToHop>       nthMap      = buildNganhToHopMap(allNV);
-            Map<String, DiemCongXetTuyen> dcMap       = buildDiemCongMap(allNV);
-            Map<String, ThiSinh>          tsMap       = buildThiSinhMap(allNV);
-            Map<String, Nganh>            nganhMap    = buildNganhMap(allNV);
-            List<BangQuyDoi>              bqdList     = bqdBUS.getAll();
+            if (callback != null) callback.update(0, allNV.size(), "Đang tải điểm thi...");
 
+            // DiemThi: key=cccd → List<DiemThiXetTuyen> (1 TS có nhiều PT)
+            Map<String, List<DiemThiXetTuyen>> diemThiMap = new HashMap<>();
+            for (DiemThiXetTuyen dt : diemThiDAO.getAll()) {
+                diemThiMap.computeIfAbsent(dt.getCccd(), k -> new ArrayList<>()).add(dt);
+            }
+
+            if (callback != null) callback.update(0, allNV.size(), "Đang tải tổ hợp ngành...");
+
+            // NganhToHop: key=maNganh → List<NganhToHop>
+            Map<String, List<NganhToHop>> nganhToHopMap = new HashMap<>();
+            List<NganhToHop> allNTH = nganhToHopDAO.getAll();
+            if (allNTH != null) {
+                for (NganhToHop nth : allNTH) {
+                    nganhToHopMap.computeIfAbsent(nth.getMaNganh(), k -> new ArrayList<>()).add(nth);
+                }
+            }
+
+            if (callback != null) callback.update(0, allNV.size(), "Đang tải điểm cộng...");
+
+            // DiemCong: key=cccd_manganh_tohop (không có phuongThuc)
+            Map<String, DiemCongXetTuyen> diemCongMap = new HashMap<>();
+            for (DiemCongXetTuyen dc : diemCongDAO.getAll()) {
+                String key = nvStr(dc.getCccd()) + "_" + nvStr(dc.getMaNganh()) + "_" + nvStr(dc.getMaToHop());
+                diemCongMap.put(key, dc);
+            }
+
+            if (callback != null) callback.update(0, allNV.size(), "Đang tải thí sinh...");
+
+            // ThiSinh: key=cccd
+            Map<String, ThiSinh> thiSinhMap = new HashMap<>();
+            for (ThiSinh ts : thiSinhDAO.getAll()) {
+                if (ts.getCccd() != null) thiSinhMap.put(ts.getCccd(), ts);
+            }
+
+            // Nganh: key=maNganh
+            Map<String, Nganh> nganhMap = new HashMap<>();
+            List<Nganh> allNganh = nganhDAO.getAll();
+            if (allNganh != null) {
+                for (Nganh n : allNganh) nganhMap.put(n.getMaNganh(), n);
+            }
+
+            // BangQuyDoi: key=phuongThuc_toHop → List<BangQuyDoi>
+            Map<String, List<BangQuyDoi>> bqdMap = new HashMap<>();
+            List<BangQuyDoi> allBQD = bqdBUS.getAll();
+            if (allBQD != null) {
+                for (BangQuyDoi bqd : allBQD) {
+                    String key = nvStr(bqd.getPhuongThuc()) + "_" + nvStr(bqd.getToHop());
+                    bqdMap.computeIfAbsent(key, k -> new ArrayList<>()).add(bqd);
+                }
+            }
+
+            if (callback != null) callback.update(0, allNV.size(), "Bắt đầu tính điểm...");
+
+            // ── Chạy engine ──
             List<NguyenVongXetTuyen> result = XetTuyenEngine.runAll(
-                    allNV, diemThiMap, nthMap, dcMap, tsMap, nganhMap, bqdList, callback);
+                    allNV, diemThiMap, nganhToHopMap, diemCongMap,
+                    thiSinhMap, nganhMap, bqdMap, callback);
 
-            boolean ok = dao.batchUpdate(result);
-            if (!ok) return "Error: Loi khi luu ket qua xuong DB!";
+            // ── Batch update kết quả vào DB ──
+            if (callback != null) callback.update(result.size(), result.size(), "Đang lưu kết quả...");
 
+            // Chia batch 5000 để update
+            int batchSize = 5000;
+            for (int i = 0; i < result.size(); i += batchSize) {
+                List<NguyenVongXetTuyen> batch = result.subList(i, Math.min(i + batchSize, result.size()));
+                boolean ok = dao.batchUpdate(batch);
+                if (!ok) return "Error: Loi khi luu ket qua xuong DB (batch " + (i / batchSize + 1) + ")!";
+            }
+
+            // ── Cập nhật điểm trúng tuyển + số lượng theo phương thức vào ngành ──
+            Map<String, List<NguyenVongXetTuyen>> byNganh = result.stream()
+                    .filter(nv -> XetTuyenEngine.KQ_TRUNG_TUYEN.equals(nv.getKetQua()))
+                    .collect(java.util.stream.Collectors.groupingBy(NguyenVongXetTuyen::getMaNganh));
+
+            for (Map.Entry<String, List<NguyenVongXetTuyen>> entry : byNganh.entrySet()) {
+                List<NguyenVongXetTuyen> trungTuyenList = entry.getValue();
+                double minDXT = trungTuyenList.stream()
+                        .mapToDouble(NguyenVongXetTuyen::getDiemXetTuyen)
+                        .min().orElse(0);
+                int slDgnl = (int) trungTuyenList.stream()
+                        .filter(nv -> "DGNL".equals(nv.getPhuongThuc()) || "2".equals(nv.getPhuongThuc())).count();
+                int slVsat = (int) trungTuyenList.stream()
+                        .filter(nv -> "VSAT".equals(nv.getPhuongThuc()) || "3".equals(nv.getPhuongThuc())).count();
+                int slThpt = (int) trungTuyenList.stream()
+                        .filter(nv -> "THPT".equals(nv.getPhuongThuc()) || "4".equals(nv.getPhuongThuc())).count();
+                nganhDAO.updateDiemTrungTuyen(entry.getKey(), minDXT,
+                        trungTuyenList.size(), slDgnl, slVsat, slThpt);
+            }
+
+            // ── Thống kê ──
             long trungTuyen = result.stream()
                     .filter(nv -> XetTuyenEngine.KQ_TRUNG_TUYEN.equals(nv.getKetQua())).count();
             long truot = result.stream()
-                    .filter(nv -> XetTuyenEngine.KQ_TRUOT_NV.equals(nv.getKetQua())
-                               || XetTuyenEngine.KQ_TRUOT_NGANH.equals(nv.getKetQua())).count();
+                    .filter(nv -> XetTuyenEngine.KQ_TRUOT_NGANH.equals(nv.getKetQua())
+                               || XetTuyenEngine.KQ_DUOI_SAN.equals(nv.getKetQua())).count();
+            long khongXet = result.stream()
+                    .filter(nv -> XetTuyenEngine.KQ_KHONG_XET.equals(nv.getKetQua())).count();
+
             return "Success|Tong NV: " + result.size()
-                 + " | Trung tuyen: " + trungTuyen + " | Truot: " + truot;
+                 + " | Trung tuyen: " + trungTuyen
+                 + " | Truot: " + truot
+                 + " | Khong xet: " + khongXet;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,51 +236,7 @@ public class NguyenVongBUS {
         }
     }
 
-    // ── LOAD MAP HELPERS ─────────────────────────────────
-    private Map<String, DiemThiXetTuyen> buildDiemThiMap(List<NguyenVongXetTuyen> nvList) {
-        Set<String> cccdSet = nvList.stream().map(NguyenVongXetTuyen::getCccd).collect(Collectors.toSet());
-        // Load tất cả DiemThi và lọc theo cccd
-        List<DiemThiXetTuyen> all = diemThiDAO.getPaginatedList(0, Integer.MAX_VALUE);
-        return all.stream()
-                .filter(dt -> cccdSet.contains(dt.getCccd()))
-                .collect(Collectors.toMap(DiemThiXetTuyen::getCccd, dt -> dt, (a, b) -> a));
-    }
-
-    private Map<String, NganhToHop> buildNganhToHopMap(List<NguyenVongXetTuyen> nvList) {
-        // key = maNganh|maToHop
-        List<NganhToHop> all = nganhToHopDAO.getAll();
-        if (all == null) return Map.of();
-        return all.stream()
-                .collect(Collectors.toMap(
-                        nth -> nth.getMaNganh() + "|" + nth.getMaToHop(),
-                        nth -> nth, (a, b) -> a));
-    }
-
-    private Map<String, DiemCongXetTuyen> buildDiemCongMap(List<NguyenVongXetTuyen> nvList) {
-        // key = cccd|maNganh|maToHop|phuongThuc → matches DiemCongXetTuyen.dcKeys format
-        List<DiemCongXetTuyen> all = diemCongDAO.getPaginatedList(0, Integer.MAX_VALUE);
-        Map<String, DiemCongXetTuyen> map = new HashMap<>();
-        for (DiemCongXetTuyen dc : all) {
-            if (dc.getDcKeys() != null) map.put(dc.getDcKeys(), dc);
-        }
-        return map;
-    }
-
-    private Map<String, ThiSinh> buildThiSinhMap(List<NguyenVongXetTuyen> nvList) {
-        Set<String> cccdSet = nvList.stream().map(NguyenVongXetTuyen::getCccd).collect(Collectors.toSet());
-        Map<String, ThiSinh> map = new HashMap<>();
-        for (String cccd : cccdSet) {
-            ThiSinh ts = thiSinhDAO.getByCccd(cccd);
-            if (ts != null) map.put(cccd, ts);
-        }
-        return map;
-    }
-
-    private Map<String, Nganh> buildNganhMap(List<NguyenVongXetTuyen> nvList) {
-        List<Nganh> all = nganhDAO.getAll();
-        if (all == null) return Map.of();
-        return all.stream().collect(Collectors.toMap(Nganh::getMaNganh, n -> n, (a, b) -> a));
-    }
+    private String nvStr(String s) { return s != null ? s : ""; }
 
     // ── IMPORT EXCEL ─────────────────────────────────────
     public interface ProgressCallback {

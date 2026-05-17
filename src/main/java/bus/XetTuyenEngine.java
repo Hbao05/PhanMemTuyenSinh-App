@@ -1,9 +1,5 @@
 package bus;
 
-import dao.DiemCongDAO;
-import dao.DiemThiDAO;
-import dao.NganhDAO;
-import dao.NganhToHopDAO;
 import entity.*;
 
 import java.util.*;
@@ -11,33 +7,37 @@ import java.util.stream.Collectors;
 
 /**
  * Engine tính điểm và xét trúng tuyển — tất cả static, độc lập với UI.
- *
- * Quy trình:
- *  1. Lấy DiemThiXetTuyen theo cccd
- *  2. Áp công thức ĐTHXT (hệ số từ NganhToHop)
- *  3. Áp doLech từ NganhToHop → ĐTHGXT
- *  4. Lấy DiemCong → ĐC
- *  5. Tính ĐƯT từ khuVuc + doiTuong của ThiSinh
- *  6. ĐXT = ĐTHGXT + ĐC + ĐƯT
- *  7. Xét trúng tuyển theo chiTieu từng ngành
+ * <p>
+ * Quy trình 7 bước:
+ * 1. Lấy nguyện vọng (batch)
+ * 2. Lấy điểm thi (1 TS có thể nhiều PT: 2=ĐGNL, 3=VSAT, 4=THPT)
+ * 3. Lấy tổ hợp môn theo mã ngành
+ * 4. Tính điểm tổ hợp thang 30 (ĐGNL quy đổi a,b,c,d; THPT/VSAT = Σ(điểm×hệ số))
+ * 5. Điểm cộng + điểm ưu tiên (giảm ĐƯT khi vượt ngưỡng 22.5)
+ * 6. ĐXT = ĐTHXT + ĐC + ĐƯT, chỉ giữ max per (cccd, maNganh)
+ * 7. Xét trúng tuyển theo chỉ tiêu + điểm sàn, ưu tiên thứ tự NV
  */
 public class XetTuyenEngine {
 
     // ── Mã kết quả ────────────────────────────────────────────────────
-    public static final String KQ_TRUNG_TUYEN       = "TRUNG_TUYEN";
-    public static final String KQ_KHONG_XET         = "KHONG_XET";
-    public static final String KQ_TRUOT_NV          = "TRUOT_NV";
-    public static final String KQ_TRUOT_NGANH       = "TRUOT_NGANH";
-    public static final String KQ_CHUA_XET          = "CHUA_XET";
+    public static final String KQ_TRUNG_TUYEN = "TRUNG_TUYEN";
+    public static final String KQ_TRUOT_NV = "TRUOT_NV";
+    public static final String KQ_DUOI_SAN = "DUOI_SAN";
+    public static final String KQ_TRUOT_NGANH = "TRUOT_NGANH";
+    public static final String KQ_KHONG_XET = "KHONG_XET";
+    public static final String KQ_CHUA_XET = "CHUA_XET";
+
+    // ── Ngưỡng quy đổi điểm ưu tiên ──────────────────────────────────
+    private static final double NGUONG_UU_TIEN = 22.5;
 
     // ── Điểm ưu tiên khu vực ─────────────────────────────────────────
     private static double diemUuTienKhuVuc(String khuVuc) {
         if (khuVuc == null) return 0;
         return switch (khuVuc.trim().toUpperCase()) {
-            case "1", "KV1"           -> 0.75;
-            case "2NT", "KV2NT"       -> 0.50;
-            case "2", "KV2"           -> 0.25;
-            default                   -> 0.0;
+            case "1", "KV1" -> 0.75;
+            case "2NT", "KV2NT" -> 0.50;
+            case "2", "KV2" -> 0.25;
+            default -> 0.0;
         };
     }
 
@@ -45,285 +45,494 @@ public class XetTuyenEngine {
     private static double diemUuTienDoiTuong(String doiTuong) {
         if (doiTuong == null) return 0;
         return switch (doiTuong.trim()) {
-            case "01", "02"                     -> 2.0;
-            case "03", "04", "05", "06", "07"  -> 1.0;
-            default                             -> 0.0;
+            case "01", "02" -> 2.0;
+            case "03", "04", "05", "06", "07" -> 1.0;
+            default -> 0.0;
         };
     }
 
     /**
-     * Tính tổng điểm ưu tiên (ĐƯT = điểm khu vực + điểm đối tượng).
-     * Đã capped ở mức 3.0 theo quy định.
+     * Tính mức điểm ưu tiên gốc (MĐƯT = khu vực + đối tượng).
      */
-    public static double tinhUuTien(ThiSinh ts) {
+    public static double tinhMucUuTien(ThiSinh ts) {
         if (ts == null) return 0;
         double kv = diemUuTienKhuVuc(ts.getKhuVuc());
         double dt = diemUuTienDoiTuong(ts.getDoiTuong());
-        return Math.min(kv + dt, 3.0);
+        return kv + dt;
     }
 
     /**
-     * Tính ĐTHXT theo công thức: [(d1*w1 + d2*w2 + d3*w3) / W] * 3
-     * Dùng hệ số từ NganhToHop (TO, LI, HO, SI, VA, SU, DI, TI, N1, KTPL).
-     * Trả về 0 nếu không đủ dữ liệu.
+     * Tính điểm ưu tiên thực tế sau khi áp dụng quy đổi theo ngưỡng.
+     * Nếu ĐTHXT + ĐC > 22.5 → ĐƯT = [(30 - ĐTHXT - ĐC) / 7.5] × MĐƯT
+     * Nếu không → ĐƯT = MĐƯT
      */
-    public static double tinhDTHXT(DiemThiXetTuyen dt, NganhToHop nth) {
+    public static double tinhUuTien(ThiSinh ts, double diemToHop, double diemCong) {
+        double mdut = tinhMucUuTien(ts);
+        if (mdut == 0) return 0;
+
+        double tongTruocUT = diemToHop + diemCong;
+        if (tongTruocUT > NGUONG_UU_TIEN) {
+            double dut = ((30.0 - tongTruocUT) / 7.5) * mdut;
+            return Math.max(0, round2(dut));
+        }
+        return mdut;
+    }
+
+    // ── TÍNH ĐIỂM TỔ HỢP THPT / VSAT (thang 30) ─────────────────────
+    /**
+     * Tính ĐTHXT cho THPT và VSAT: Σ(điểm_môn × hệ_số) / Σ(hệ_số) × 3
+     */
+    public static double tinhDTHXT_THPT(DiemThiXetTuyen dt, NganhToHop nth) {
         if (dt == null || nth == null) return 0;
 
-        // Map (hệ số, điểm) cho tất cả môn có hệ số > 0
         double sumWeighted = 0;
-        int    totalWeight = 0;
+        int totalWeight = 0;
 
-        sumWeighted += safeWD(nth.getTo(),   dt.getDiemToan());
+        // Các cột hệ số cố định trong NganhToHop
+        sumWeighted += safeWD(nth.getTo(), dt.getDiemToan());
         totalWeight += safeW(nth.getTo());
-        sumWeighted += safeWD(nth.getLi(),   dt.getDiemLy());
+        sumWeighted += safeWD(nth.getLi(), dt.getDiemLy());
         totalWeight += safeW(nth.getLi());
-        sumWeighted += safeWD(nth.getHo(),   dt.getDiemHoa());
+        sumWeighted += safeWD(nth.getHo(), dt.getDiemHoa());
         totalWeight += safeW(nth.getHo());
-        sumWeighted += safeWD(nth.getSi(),   dt.getDiemSinh());
+        sumWeighted += safeWD(nth.getSi(), dt.getDiemSinh());
         totalWeight += safeW(nth.getSi());
-        sumWeighted += safeWD(nth.getVa(),   dt.getDiemVan());
+        sumWeighted += safeWD(nth.getVa(), dt.getDiemVan());
         totalWeight += safeW(nth.getVa());
-        sumWeighted += safeWD(nth.getSu(),   dt.getDiemSu());
+        sumWeighted += safeWD(nth.getSu(), dt.getDiemSu());
         totalWeight += safeW(nth.getSu());
-        sumWeighted += safeWD(nth.getDi(),   dt.getDiemDia());
+        sumWeighted += safeWD(nth.getDi(), dt.getDiemDia());
         totalWeight += safeW(nth.getDi());
-        sumWeighted += safeWD(nth.getTi(),   dt.getDiemTiengAnh());
+        sumWeighted += safeWD(nth.getTi(), dt.getDiemTiengAnh());
         totalWeight += safeW(nth.getTi());
-        // N1: ưu tiên điểm thi, nếu không có dùng điểm chứng chỉ
-        Double n1Score = dt.getN1Thi() != null ? dt.getN1Thi() : dt.getN1Cc();
-        sumWeighted += safeWD(nth.getN1(), n1Score);
-        totalWeight += safeW(nth.getN1());
         sumWeighted += safeWD(nth.getKtpl(), dt.getDiemKtpl());
         totalWeight += safeW(nth.getKtpl());
 
+        // N1: lấy điểm CAO HƠN nếu cả 2 không null
+        Double n1Score = maxNullable(dt.getN1Thi(), dt.getN1Cc());
+        sumWeighted += safeWD(nth.getN1(), n1Score);
+        totalWeight += safeW(nth.getN1());
+
+        // KHAC: ánh xạ qua thMon1/thMon2/thMon3 cho GDCD, NK1-NK10, CNCN, CNNN...
+        if (nth.getKhac() != null && nth.getKhac() > 0) {
+            // Tìm môn nào trong thMon1/2/3 không phải môn chuẩn → đó là môn KHAC
+            Double khacScore = findKhacScore(dt, nth);
+            sumWeighted += safeWD(nth.getKhac(), khacScore);
+            totalWeight += safeW(nth.getKhac());
+        }
+
         if (totalWeight == 0) return 0;
-        // Quy chuẩn về thang 30 (3 môn hệ số 1)
         return (sumWeighted / totalWeight) * 3.0;
+    }
+
+    /**
+     * Lấy điểm cao hơn giữa 2 giá trị nullable.
+     */
+    private static Double maxNullable(Double a, Double b) {
+        if (a == null) return b;
+        if (b == null) return a;
+        return Math.max(a, b);
+    }
+
+    /**
+     * Tìm điểm cho môn KHAC dựa trên thMon1/thMon2/thMon3 trong NganhToHop.
+     * Các môn chuẩn (TO, LI, HO...) đã có cột riêng → tìm môn không thuộc nhóm chuẩn.
+     */
+    private static Double findKhacScore(DiemThiXetTuyen dt, NganhToHop nth) {
+        String[] monFields = {nth.getThMon1(), nth.getThMon2(), nth.getThMon3()};
+        java.util.Set<String> standardSubjects = java.util.Set.of(
+                "TO", "LI", "HO", "SI", "VA", "SU", "DI", "TI", "N1", "KTPL");
+        for (String mon : monFields) {
+            if (mon != null && !standardSubjects.contains(mon.trim().toUpperCase())) {
+                Double score = getScoreBySubject(dt, mon);
+                if (score != null) return score;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Ánh xạ mã môn → cột điểm trong DiemThiXetTuyen.
+     * Hỗ trợ tất cả các môn: GDCD, NK1-NK10, CNCN, CNNN, NL1, v.v.
+     */
+    private static Double getScoreBySubject(DiemThiXetTuyen dt, String subject) {
+        if (subject == null || dt == null) return null;
+        return switch (subject.trim().toUpperCase()) {
+            case "TO" -> dt.getDiemToan();
+            case "LI" -> dt.getDiemLy();
+            case "HO" -> dt.getDiemHoa();
+            case "SI" -> dt.getDiemSinh();
+            case "VA" -> dt.getDiemVan();
+            case "SU" -> dt.getDiemSu();
+            case "DI" -> dt.getDiemDia();
+            case "TI" -> dt.getDiemTiengAnh();
+            case "GDCD" -> dt.getDiemGdcd();
+            case "KTPL" -> dt.getDiemKtpl();
+            case "N1" -> maxNullable(dt.getN1Thi(), dt.getN1Cc());
+            case "NL1" -> dt.getNl1();
+            case "CNCN" -> dt.getCncn();
+            case "CNNN" -> dt.getCnnn();
+            case "NK1" -> dt.getNk1();
+            case "NK2" -> dt.getNk2();
+            case "NK3" -> dt.getNk3();
+            case "NK4" -> dt.getNk4();
+            case "NK5" -> dt.getNk5();
+            case "NK6" -> dt.getNk6();
+            case "NK7" -> dt.getNk7();
+            case "NK8" -> dt.getNk8();
+            case "NK9" -> dt.getNk9();
+            case "NK10" -> dt.getNk10();
+            default -> null;
+        };
+    }
+
+    // ── TÍNH ĐIỂM TỔ HỢP ĐGNL (thang 30) ────────────────────────────
+    /**
+     * Quy đổi điểm ĐGNL về thang 30 bằng bảng quy đổi.
+     * Tìm dòng BangQuyDoi sao cho: phuongThuc + toHop khớp và diemA ≤ score ≤ diemB
+     * Nội suy tuyến tính: result = diemC + (score - diemA)/(diemB - diemA) * (diemD - diemC)
+     */
+    public static double tinhDTHXT_DGNL(double diemDGNL, String maToHop,
+                                         Map<String, List<BangQuyDoi>> bqdMap) {
+        // Tìm BQD phù hợp: key = phuongThuc + "_" + toHop
+        List<BangQuyDoi> candidates = bqdMap.get("DGNL_" + maToHop);
+        if (candidates == null || candidates.isEmpty()) {
+            // Fallback: tìm theo phuongThuc only
+            candidates = bqdMap.get("DGNL_");
+        }
+        if (candidates == null || candidates.isEmpty()) return 0;
+
+        // Tìm dòng có diemA <= diemDGNL <= diemB
+        for (BangQuyDoi bqd : candidates) {
+            Double a = bqd.getDiemA(), b = bqd.getDiemB();
+            Double c = bqd.getDiemC(), d = bqd.getDiemD();
+            if (a == null || b == null || c == null || d == null) continue;
+
+            if (diemDGNL >= a && diemDGNL <= b) {
+                // Nội suy tuyến tính
+                if (b.equals(a)) return c;
+                double ratio = (diemDGNL - a) / (b - a);
+                return c + ratio * (d - c);
+            }
+        }
+
+        // Nếu không tìm thấy khoảng phù hợp, thử extrapolate
+        // Lấy dòng đầu (thấp nhất) hoặc cuối (cao nhất)
+        BangQuyDoi first = candidates.get(0);
+        BangQuyDoi last = candidates.get(candidates.size() - 1);
+        if (diemDGNL < first.getDiemA() && first.getDiemC() != null) {
+            return first.getDiemC(); // dưới min → lấy diemC min
+        }
+        if (diemDGNL > last.getDiemB() && last.getDiemD() != null) {
+            return last.getDiemD(); // trên max → lấy diemD max
+        }
+        return 0;
+    }
+
+    /**
+     * Lấy điểm ĐGNL tổng từ DiemThiXetTuyen.
+     * ĐGNL lưu tổng điểm vào field diemToan (repurposed).
+     */
+    private static Double getDiemDGNL(DiemThiXetTuyen dt) {
+        // Ưu tiên: diemToan (thường dùng lưu tổng điểm ĐGNL)
+        if (dt.getNl1() != null) return dt.getNl1();
+        return null;
     }
 
     private static double safeWD(Integer w, Double d) {
         if (w == null || w <= 0 || d == null) return 0;
         return w * d;
     }
+
     private static int safeW(Integer w) {
         return (w != null && w > 0) ? w : 0;
     }
 
-    /**
-     * Quy đổi điểm V-SAT / ĐGNL về thang THPT bằng nội suy tuyến tính.
-     * Dùng 4 điểm neo (A, B, C, D) trong BangQuyDoi để xác định THPT tương đương.
-     *
-     * THPT tương đương cố định tại các mốc: A→5.0, B→6.5, C→7.5, D→9.0
-     * (Admin cần nhập đúng giá trị diemA/B/C/D trong BangQuyDoi để khớp tài liệu chính thức)
-     */
-    public static double quyDoiVeSAThoTP(double score, BangQuyDoi bqd) {
-        if (bqd == null) return score; // không có dữ liệu → dùng nguyên điểm
-        Double a = bqd.getDiemA(), b = bqd.getDiemB(), c = bqd.getDiemC(), d = bqd.getDiemD();
-        if (a == null || b == null || c == null || d == null) return score;
-
-        // Các mốc THPT tương đương (cố định theo quy định)
-        final double TA = 5.0, TB = 6.5, TC = 7.5, TD = 9.0;
-        final double T_MIN = 0.0, T_MAX = 10.0;
-
-        if (score <= a) return lerp(0, a, T_MIN, TA, score);
-        if (score <= b) return lerp(a, b, TA, TB, score);
-        if (score <= c) return lerp(b, c, TB, TC, score);
-        if (score <= d) return lerp(c, d, TC, TD, score);
-        return lerp(d, d + (d - c), TD, T_MAX, score); // extrapolate above D
-    }
-
-    /** Nội suy tuyến tính: tại x trong [x1,x2] → y trong [y1,y2] */
-    private static double lerp(double x1, double x2, double y1, double y2, double x) {
-        if (x2 == x1) return y1;
-        double t = (x - x1) / (x2 - x1);
-        t = Math.max(0, Math.min(1, t));
-        return y1 + t * (y2 - y1);
-    }
-
     // ── KẾT QUẢ TÍNH TOÁN MỘT NGUYỆN VỌNG ──────────────────────────
-    public record KetQuaTinh(double dthxt, double dthgxt, double diemCong,
-                             double uuTien, double dxt) {}
-
-    /**
-     * Tính đầy đủ điểm cho một nguyện vọng.
-     * Trả về null nếu thiếu dữ liệu cơ bản (không có điểm thi hoặc NganhToHop).
-     */
-    public static KetQuaTinh tinhDXT(NguyenVongXetTuyen nv,
-                                     DiemThiXetTuyen    diemThi,
-                                     NganhToHop         nth,
-                                     DiemCongXetTuyen   diemCong,
-                                     ThiSinh            thiSinh,
-                                     List<BangQuyDoi>   bangQuyDoiList) {
-        if (diemThi == null || nth == null) return null;
-
-        String pt = nv.getPhuongThuc() != null ? nv.getPhuongThuc() : diemThi.getPhuongThuc();
-
-        DiemThiXetTuyen diemTinhToan = diemThi;
-
-        // Nếu V-SAT hoặc ĐGNL: chuyển đổi từng điểm về thang THPT trước khi tính ĐTHXT
-        if ("VSAT".equals(pt) || "DGNL".equals(pt)) {
-            diemTinhToan = quyDoiDiemVeSAT(diemThi, nv.getToHopMon(), pt, bangQuyDoiList);
-        }
-
-        double dthxt  = tinhDTHXT(diemTinhToan, nth);
-        // doLech từ NganhToHop = độ điều chỉnh giữa tổ hợp thi và tổ hợp gốc của ngành
-        double doLech = nth.getDoLech() != null ? nth.getDoLech() : 0.0;
-        double dthgxt = dthxt + doLech;
-
-        double dc     = diemCong != null && diemCong.getDiemTong() != null ? diemCong.getDiemTong() : 0.0;
-        double uuTien = tinhUuTien(thiSinh);
-        double dxt    = dthgxt + dc + uuTien;
-
-        return new KetQuaTinh(dthxt, dthgxt, dc, uuTien, dxt);
+    public record KetQuaTinh(double dthxt, double diemCong,
+                             double uuTien, double dxt,
+                             String phuongThuc, String toHopMon) {
     }
 
-    /** Tạo bản sao DiemThiXetTuyen với điểm đã quy đổi về THPT */
-    private static DiemThiXetTuyen quyDoiDiemVeSAT(DiemThiXetTuyen dt, String toHopMon,
-                                                    String pt, List<BangQuyDoi> bqdList) {
-        DiemThiXetTuyen converted = new DiemThiXetTuyen();
-        converted.setIdDiemThi(dt.getIdDiemThi());
-        converted.setCccd(dt.getCccd());
-        converted.setPhuongThuc("THPT_QD"); // đã quy đổi
-
-        // Chuyển đổi từng môn dùng BangQuyDoi tương ứng
-        converted.setDiemToan(    convertMon(dt.getDiemToan(),     "Toan",     toHopMon, pt, bqdList));
-        converted.setDiemLy(      convertMon(dt.getDiemLy(),       "Ly",       toHopMon, pt, bqdList));
-        converted.setDiemHoa(     convertMon(dt.getDiemHoa(),      "Hoa",      toHopMon, pt, bqdList));
-        converted.setDiemSinh(    convertMon(dt.getDiemSinh(),     "Sinh",     toHopMon, pt, bqdList));
-        converted.setDiemVan(     convertMon(dt.getDiemVan(),      "Van",      toHopMon, pt, bqdList));
-        converted.setDiemSu(      convertMon(dt.getDiemSu(),       "Su",       toHopMon, pt, bqdList));
-        converted.setDiemDia(     convertMon(dt.getDiemDia(),      "Dia",      toHopMon, pt, bqdList));
-        converted.setDiemTiengAnh(convertMon(dt.getDiemTiengAnh(),"TiengAnh", toHopMon, pt, bqdList));
-        converted.setN1Thi(       convertMon(dt.getN1Thi(),        "N1",       toHopMon, pt, bqdList));
-        converted.setDiemKtpl(    convertMon(dt.getDiemKtpl(),     "KTPL",     toHopMon, pt, bqdList));
-        converted.setNl1(dt.getNl1()); converted.setNk1(dt.getNk1()); converted.setNk2(dt.getNk2());
-        converted.setCncn(dt.getCncn()); converted.setCnnn(dt.getCnnn());
-        return converted;
-    }
-
-    private static Double convertMon(Double rawScore, String monName, String toHop,
-                                     String pt, List<BangQuyDoi> bqdList) {
-        if (rawScore == null) return null;
-        BangQuyDoi bqd = bqdList.stream()
-                .filter(b -> pt.equals(b.getPhuongThuc())
-                          && monName.equalsIgnoreCase(b.getMon())
-                          && (toHop == null || toHop.equals(b.getToHop()) || b.getToHop() == null))
-                .findFirst()
-                // fallback: chỉ khớp PT + môn
-                .or(() -> bqdList.stream()
-                        .filter(b -> pt.equals(b.getPhuongThuc()) && monName.equalsIgnoreCase(b.getMon()))
-                        .findFirst())
-                .orElse(null);
-        return quyDoiVeSAThoTP(rawScore, bqd);
+    // ── PROGRESS CALLBACK ────────────────────────────────────────────
+    public interface ProgressCallback {
+        void update(int done, int total, String phase);
     }
 
     // ── CHẠY XÉT TUYỂN TOÀN BỘ ──────────────────────────────────────
-
-    public interface ProgressCallback { void update(int done, int total); }
-
     /**
-     * Chạy toàn bộ quy trình xét tuyển.
-     * Trả về danh sách NguyenVong đã được cập nhật điểm và kết quả (chưa lưu vào DB).
+     * Chạy toàn bộ quy trình xét tuyển 7 bước.
+     * Trả về danh sách NguyenVong đã được cập nhật điểm và kết quả.
      */
     public static List<NguyenVongXetTuyen> runAll(
             List<NguyenVongXetTuyen> allNV,
-            Map<String, DiemThiXetTuyen>  diemThiMap,      // key = cccd
-            Map<String, NganhToHop>       nganhToHopMap,   // key = maNganh|maToHop
-            Map<String, DiemCongXetTuyen> diemCongMap,     // key = cccd|maNganh|maToHop|pt
-            Map<String, ThiSinh>          thiSinhMap,       // key = cccd
-            Map<String, Nganh>            nganhMap,         // key = maNganh
-            List<BangQuyDoi>              bangQuyDoiList,
-            ProgressCallback              callback) {
+            Map<String, List<DiemThiXetTuyen>> diemThiMap,   // key = cccd → list điểm theo PT
+            Map<String, List<NganhToHop>> nganhToHopMap,      // key = maNganh → list tổ hợp
+            Map<String, DiemCongXetTuyen> diemCongMap,        // key = cccd_maNganh_maToHop
+            Map<String, ThiSinh> thiSinhMap,                  // key = cccd
+            Map<String, Nganh> nganhMap,                      // key = maNganh
+            Map<String, List<BangQuyDoi>> bqdMap,             // key = phuongThuc_toHop
+            ProgressCallback callback) {
 
         int total = allNV.size(), done = 0;
 
-        // ─ Bước 1: Tính điểm từng nguyện vọng ─
-        for (NguyenVongXetTuyen nv : allNV) {
-            DiemThiXetTuyen  dt  = diemThiMap.get(nv.getCccd());
-            NganhToHop       nth = nganhToHopMap.get(nv.getMaNganh() + "|" + nv.getToHopMon());
-            ThiSinh          ts  = thiSinhMap.get(nv.getCccd());
-            String dcKey = nv.getCccd() + "|" + nv.getMaNganh() + "|"
-                         + nvStr(nv.getToHopMon()) + "|" + nvStr(nv.getPhuongThuc());
-            DiemCongXetTuyen dc  = diemCongMap.get(dcKey);
+        // ─ Bước 1-6: Tính điểm cho từng NV, chọn tổ hợp + PT tốt nhất ─
+        if (callback != null) callback.update(0, total, "Đang tính điểm...");
 
+        for (NguyenVongXetTuyen nv : allNV) {
             nv.setKetQua(KQ_CHUA_XET);
-            KetQuaTinh kq = tinhDXT(nv, dt, nth, dc, ts, bangQuyDoiList);
-            if (kq != null) {
-                nv.setDiemThxt(round2(kq.dthgxt()));      // lưu ĐTHGXT
-                nv.setDiemCong(round2(kq.diemCong()));
-                nv.setDiemUtqd(round2(kq.uuTien()));
-                nv.setDiemXetTuyen(round2(kq.dxt()));
+            nv.setDiemThxt(null);
+            nv.setDiemCong(null);
+            nv.setDiemUtqd(null);
+            nv.setDiemXetTuyen(null);
+
+            String cccd = nv.getCccd();
+            String maNganh = nv.getMaNganh();
+            ThiSinh ts = thiSinhMap.get(cccd);
+
+            // Lấy tất cả điểm thi của thí sinh này
+            List<DiemThiXetTuyen> danhSachDiem = diemThiMap.get(cccd);
+            if (danhSachDiem == null || danhSachDiem.isEmpty()) {
+                done++;
+                if (callback != null && done % 1000 == 0) callback.update(done, total, "Đang tính điểm...");
+                continue;
+            }
+
+            // Lấy tất cả tổ hợp cho mã ngành
+            List<NganhToHop> danhSachToHop = nganhToHopMap.get(maNganh);
+            if (danhSachToHop == null || danhSachToHop.isEmpty()) {
+                done++;
+                if (callback != null && done % 1000 == 0) callback.update(done, total, "Đang tính điểm...");
+                continue;
+            }
+
+            // Tìm tổ hợp × phương thức cho ĐXT cao nhất
+            KetQuaTinh best = null;
+
+            for (DiemThiXetTuyen diemThi : danhSachDiem) {
+                String pt = diemThi.getPhuongThuc();
+                if (pt == null) continue;
+
+                for (NganhToHop nth : danhSachToHop) {
+                    String maToHop = nth.getMaToHop();
+
+                    // Bước 4: Tính ĐTHXT theo phương thức
+                    double dthxt;
+                    if ("2".equals(pt)) {
+                        // ĐGNL: quy đổi bằng bảng quy đổi → thang 30
+                        Double rawScore = getDiemDGNL(diemThi);
+                        if (rawScore == null) continue;
+                        dthxt = tinhDTHXT_DGNL(rawScore, maToHop, bqdMap);
+                    } else {
+                        // THPT (4) và VSAT (3): tính trực tiếp
+                        dthxt = tinhDTHXT_THPT(diemThi, nth);
+                    }
+
+                    if (dthxt <= 0) continue;
+
+                    // Bước 5: Điểm cộng (lookup bằng key cccd_manganh_tohop)
+                    String dcKey = cccd + "_" + maNganh + "_" + maToHop;
+                    DiemCongXetTuyen dc = diemCongMap.get(dcKey);
+                    double diemCong = (dc != null && dc.getDiemTong() != null) ? dc.getDiemTong() : 0.0;
+
+                    // Điểm ưu tiên (có quy đổi theo ngưỡng)
+                    double uuTien = tinhUuTien(ts, dthxt, diemCong);
+
+                    // Bước 6: Tính ĐXT
+                    double dxt = dthxt + diemCong + uuTien;
+
+                    if (best == null || dxt > best.dxt()) {
+                        best = new KetQuaTinh(
+                                round2(dthxt), round2(diemCong),
+                                round2(uuTien), round2(dxt),
+                                pt, maToHop);
+                    }
+                }
+            }
+
+            // Cập nhật NV với kết quả tốt nhất
+            if (best != null) {
+                nv.setDiemThxt(best.dthxt());
+                nv.setDiemCong(best.diemCong());
+                nv.setDiemUtqd(best.uuTien());
+                nv.setDiemXetTuyen(best.dxt());
+                nv.setPhuongThuc(best.phuongThuc());
+                nv.setToHopMon(best.toHopMon());
             }
 
             done++;
-            if (callback != null) callback.update(done, total);
+            if (callback != null && done % 1000 == 0) callback.update(done, total, "Đang tính điểm...");
         }
 
-        // ─ Bước 2: Xác định trúng/rớt ─
-        // Group theo ngành → sort ĐXT giảm → đánh dấu top N = DAU (internal)
-        Map<String, List<NguyenVongXetTuyen>> byNganh = allNV.stream()
-                .collect(Collectors.groupingBy(nv -> nv.getMaNganh() != null ? nv.getMaNganh() : ""));
+        if (callback != null) callback.update(total, total, "Đang xét trúng tuyển...");
 
-        // Tập NV được đánh dấu "đậu" ở cấp ngành
-        Set<Integer> dauSet = new HashSet<>();
-        for (Map.Entry<String, List<NguyenVongXetTuyen>> entry : byNganh.entrySet()) {
-            String maNganh = entry.getKey();
-            Nganh  nganh   = nganhMap.get(maNganh);
-            int chiTieu = nganh != null ? nganh.getChiTieu() : 0;
-            double diemSan = nganh != null && nganh.getDiemSan() != null ? nganh.getDiemSan() : 0;
-
-            List<NguyenVongXetTuyen> sorted = entry.getValue().stream()
-                    .filter(nv -> nv.getDiemXetTuyen() != null)
-                    .sorted(Comparator.comparingDouble(NguyenVongXetTuyen::getDiemXetTuyen).reversed())
-                    .toList();
-
-            int count = 0;
-            for (NguyenVongXetTuyen nv : sorted) {
-                if (count < chiTieu && nv.getDiemXetTuyen() >= diemSan) {
-                    dauSet.add(nv.getIdNv());
-                    count++;
-                }
-            }
-        }
-
-        // ─ Bước 3: Xác định kết quả cuối per thí sinh ─
-        Map<String, List<NguyenVongXetTuyen>> byThiSinh = allNV.stream()
-                .collect(Collectors.groupingBy(nv -> nv.getCccd() != null ? nv.getCccd() : ""));
-
-        for (List<NguyenVongXetTuyen> nvList : byThiSinh.values()) {
-            // Sắp xếp theo thứ tự nguyện vọng tăng dần
-            List<NguyenVongXetTuyen> sorted = nvList.stream()
-                    .sorted(Comparator.comparingInt(NguyenVongXetTuyen::getThuTuNguyenVong))
-                    .toList();
-
-            // Tìm NV đầu tiên có "đậu" ở cấp ngành
-            int trungTuyenTT = Integer.MAX_VALUE;
-            for (NguyenVongXetTuyen nv : sorted) {
-                if (dauSet.contains(nv.getIdNv())) {
-                    trungTuyenTT = nv.getThuTuNguyenVong();
-                    break;
-                }
-            }
-
-            for (NguyenVongXetTuyen nv : sorted) {
-                int tt = nv.getThuTuNguyenVong();
-                if (tt == trungTuyenTT && dauSet.contains(nv.getIdNv())) {
-                    nv.setKetQua(KQ_TRUNG_TUYEN);
-                } else if (tt < trungTuyenTT) {
-                    // NV thứ tự thấp hơn mà không trúng → trượt NV đó
-                    nv.setKetQua(dauSet.contains(nv.getIdNv()) ? KQ_TRUOT_NGANH : KQ_TRUOT_NV);
-                } else if (tt > trungTuyenTT) {
-                    nv.setKetQua(KQ_KHONG_XET);
-                } else {
-                    nv.setKetQua(dauSet.contains(nv.getIdNv()) ? KQ_TRUOT_NGANH : KQ_TRUOT_NV);
-                }
-            }
-        }
+        // ─ Bước 7: Xét trúng tuyển ─
+        xetTrungTuyen(allNV, nganhMap, callback);
 
         return allNV;
     }
 
-    private static String nvStr(String s) { return s != null ? s : ""; }
-    private static double round2(double v) { return Math.round(v * 100.0) / 100.0; }
+    /**
+     * Bước 7: Xét trúng tuyển theo chỉ tiêu + điểm sàn,
+     * ưu tiên thứ tự nguyện vọng (nếu đậu NV trước thì không xét NV sau).
+     * <p>
+     * Dùng thuật toán lặp nhiều vòng (deferred acceptance):
+     * - Vòng 1: xét tất cả NV, chọn top chỉ tiêu per ngành
+     * - Thí sinh đậu NV ưu tiên cao hơn → giải phóng slot ở ngành NV thấp hơn
+     * - Vòng tiếp: lấp slot trống bằng thí sinh tiếp theo đủ điều kiện
+     * - Lặp đến khi ổn định (không còn thay đổi)
+     */
+    private static void xetTrungTuyen(List<NguyenVongXetTuyen> allNV,
+                                       Map<String, Nganh> nganhMap,
+                                       ProgressCallback callback) {
+        // Chỉ xét NV có điểm
+        List<NguyenVongXetTuyen> nvCoDiem = allNV.stream()
+                .filter(nv -> nv.getDiemXetTuyen() != null)
+                .toList();
+
+        // Group theo ngành: maNganh → list NV sorted by ĐXT giảm dần
+        Map<String, List<NguyenVongXetTuyen>> byNganh = new HashMap<>();
+        for (NguyenVongXetTuyen nv : nvCoDiem) {
+            String mn = nv.getMaNganh() != null ? nv.getMaNganh() : "";
+            byNganh.computeIfAbsent(mn, k -> new ArrayList<>()).add(nv);
+        }
+        // Sort mỗi ngành theo ĐXT giảm dần
+        for (List<NguyenVongXetTuyen> list : byNganh.values()) {
+            list.sort(Comparator.comparingDouble(NguyenVongXetTuyen::getDiemXetTuyen).reversed());
+        }
+
+        // Group theo thí sinh: cccd → list NV sorted by thứ tự NV tăng dần
+        Map<String, List<NguyenVongXetTuyen>> byThiSinh = new HashMap<>();
+        for (NguyenVongXetTuyen nv : nvCoDiem) {
+            String cccd = nv.getCccd() != null ? nv.getCccd() : "";
+            byThiSinh.computeIfAbsent(cccd, k -> new ArrayList<>()).add(nv);
+        }
+        for (List<NguyenVongXetTuyen> list : byThiSinh.values()) {
+            list.sort(Comparator.comparingInt(NguyenVongXetTuyen::getThuTuNguyenVong));
+        }
+
+        // ── Lặp nhiều vòng cho đến khi ổn định ──
+        Set<String> daAdmit = new HashSet<>();    // cccd đã trúng tuyển
+        Map<String, Integer> admitted = new HashMap<>(); // idNv → ngành đã admit
+        int maxRounds = 100; // chống infinite loop
+
+        for (int round = 0; round < maxRounds; round++) {
+            boolean changed = false;
+
+            // Bước A: Per ngành, chọn top chỉ tiêu (bỏ qua thí sinh đã trúng ngành khác)
+            Set<Integer> dauSetRound = new HashSet<>();
+            for (Map.Entry<String, List<NguyenVongXetTuyen>> entry : byNganh.entrySet()) {
+                String maNganh = entry.getKey();
+                Nganh nganh = nganhMap.get(maNganh);
+                int chiTieu = nganh != null ? nganh.getChiTieu() : 0;
+                double diemSan = nganh != null && nganh.getDiemSan() != null ? nganh.getDiemSan() : 0;
+
+                int count = 0;
+                for (NguyenVongXetTuyen nv : entry.getValue()) {
+                    if (count >= chiTieu) break;
+                    if (nv.getDiemXetTuyen() < diemSan) continue;
+                    // Bỏ qua thí sinh đã trúng tuyển ở ngành KHÁC
+                    String cccd = nv.getCccd();
+                    if (daAdmit.contains(cccd)) {
+                        Integer admittedId = admitted.get(cccd);
+                        if (admittedId != null && admittedId != nv.getIdNv()) continue;
+                    }
+                    dauSetRound.add(nv.getIdNv());
+                    count++;
+                }
+            }
+
+            // Bước B: Per thí sinh, chọn NV ưu tiên cao nhất trong dauSetRound
+            daAdmit.clear();
+            admitted.clear();
+
+            for (Map.Entry<String, List<NguyenVongXetTuyen>> entry : byThiSinh.entrySet()) {
+                for (NguyenVongXetTuyen nv : entry.getValue()) {
+                    if (dauSetRound.contains(nv.getIdNv())) {
+                        daAdmit.add(nv.getCccd());
+                        admitted.put(nv.getCccd(), nv.getIdNv());
+                        break; // chỉ lấy NV đầu tiên (ưu tiên cao nhất)
+                    }
+                }
+            }
+
+            // Bước C: Kiểm tra ổn định
+            if (round == 0) {
+                changed = true; // vòng đầu luôn cần chạy tiếp
+            } else {
+                // Nếu dauSetRound không thay đổi so với vòng trước → ổn định
+                // (thực tế: nếu không có thí sinh nào bị "giải phóng" slot → ổn định)
+                // Ta dùng cách đơn giản: chạy thêm 1 vòng nữa để verify
+                changed = (dauSetRound.size() != admitted.size() * 0 + dauSetRound.size()); // always check
+            }
+
+            // Nếu vòng 2+ mà kết quả giống vòng trước → break
+            if (round > 0) {
+                // Đếm số slot trống per ngành
+                boolean hasVacancy = false;
+                for (Map.Entry<String, List<NguyenVongXetTuyen>> entry : byNganh.entrySet()) {
+                    Nganh nganh = nganhMap.get(entry.getKey());
+                    int chiTieu = nganh != null ? nganh.getChiTieu() : 0;
+                    long admittedCount = entry.getValue().stream()
+                            .filter(nv -> dauSetRound.contains(nv.getIdNv()) && admitted.containsValue(nv.getIdNv()))
+                            .count();
+                    long eligibleNotAdmitted = entry.getValue().stream()
+                            .filter(nv -> !daAdmit.contains(nv.getCccd())
+                                    && nv.getDiemXetTuyen() >= (nganh != null && nganh.getDiemSan() != null ? nganh.getDiemSan() : 0))
+                            .count();
+                    if (admittedCount < chiTieu && eligibleNotAdmitted > 0) {
+                        hasVacancy = true;
+                        break;
+                    }
+                }
+                if (!hasVacancy) break;
+            }
+        }
+
+        // ── Gán kết quả cuối cùng ──
+        Set<Integer> finalAdmitIds = new HashSet<>(admitted.values());
+
+        for (NguyenVongXetTuyen nv : allNV) {
+            if (nv.getDiemXetTuyen() == null) {
+                nv.setKetQua(KQ_CHUA_XET);
+                continue;
+            }
+
+            if (finalAdmitIds.contains(nv.getIdNv())) {
+                nv.setKetQua(KQ_TRUNG_TUYEN);
+            } else if (daAdmit.contains(nv.getCccd())) {
+                // Thí sinh đã trúng NV khác → NV này không xét
+                Integer admittedNvId = admitted.get(nv.getCccd());
+                if (admittedNvId != null) {
+                    // Tìm thứ tự NV đã trúng
+                    NguyenVongXetTuyen admittedNv = allNV.stream()
+                            .filter(x -> x.getIdNv() == admittedNvId)
+                            .findFirst().orElse(null);
+                    if (admittedNv != null && nv.getThuTuNguyenVong() > admittedNv.getThuTuNguyenVong()) {
+                        nv.setKetQua(KQ_KHONG_XET);
+                    } else {
+                        // NV trước NV trúng tuyển → trượt
+                        Nganh ng = nganhMap.get(nv.getMaNganh());
+                        double diemSan = ng != null && ng.getDiemSan() != null ? ng.getDiemSan() : 0;
+                        nv.setKetQua(nv.getDiemXetTuyen() < diemSan ? KQ_DUOI_SAN : KQ_TRUOT_NGANH);
+                    }
+                } else {
+                    nv.setKetQua(KQ_KHONG_XET);
+                }
+            } else {
+                // Thí sinh không trúng NV nào
+                Nganh ng = nganhMap.get(nv.getMaNganh());
+                double diemSan = ng != null && ng.getDiemSan() != null ? ng.getDiemSan() : 0;
+                nv.setKetQua(nv.getDiemXetTuyen() < diemSan ? KQ_DUOI_SAN : KQ_TRUOT_NGANH);
+            }
+        }
+    }
+
+    private static String nvStr(String s) {
+        return s != null ? s : "";
+    }
+
+    private static double round2(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
 }

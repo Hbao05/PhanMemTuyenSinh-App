@@ -234,4 +234,12 @@ public class DiemCongDAO {
         }
         return successCount;
     }
+
+    // ── LẤY TẤT CẢ (cho engine xét tuyển) ───────────────
+    public List<DiemCongXetTuyen> getAll() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM DiemCongXetTuyen d ORDER BY d.cccd", DiemCongXetTuyen.class).list();
+        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+    }
 }

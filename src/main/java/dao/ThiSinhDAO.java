@@ -225,4 +225,12 @@ public class ThiSinhDAO {
             return null;
         }
     }
+
+    // ── LẤY TẤT CẢ (cho engine xét tuyển) ───────────────
+    public List<ThiSinh> getAll() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("FROM ThiSinh t", ThiSinh.class).list();
+        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+    }
 }
+

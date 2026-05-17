@@ -151,15 +151,31 @@ public class NguyenVongDAO {
         } catch (Exception e) { e.printStackTrace(); return List.of(); }
     }
 
-    // ── BATCH UPDATE sau khi engine chạy ─────────────────
+    // ── BATCH UPDATE sau khi engine chạy (native SQL, nhanh hơn merge) ──
     public boolean batchUpdate(List<NguyenVongXetTuyen> list) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            for (int i = 0; i < list.size(); i++) {
-                session.merge(list.get(i));
-                if (i % 50 == 0) { session.flush(); session.clear(); }
-            }
+            session.doWork(connection -> {
+                String sql = "UPDATE xt_nguyenvongxettuyen SET diem_thxt=?, diem_cong=?, diem_utqd=?, " +
+                        "diem_xettuyen=?, nv_ketqua=?, tt_phuongthuc=?, tt_thm=? WHERE idnv=?";
+                try (java.sql.PreparedStatement ps = connection.prepareStatement(sql)) {
+                    int count = 0;
+                    for (NguyenVongXetTuyen nv : list) {
+                        setNullableDouble(ps, 1, nv.getDiemThxt());
+                        setNullableDouble(ps, 2, nv.getDiemCong());
+                        setNullableDouble(ps, 3, nv.getDiemUtqd());
+                        setNullableDouble(ps, 4, nv.getDiemXetTuyen());
+                        ps.setString(5, nv.getKetQua());
+                        ps.setString(6, nv.getPhuongThuc());
+                        ps.setString(7, nv.getToHopMon());
+                        ps.setInt(8, nv.getIdNv());
+                        ps.addBatch();
+                        if (++count % 500 == 0) ps.executeBatch();
+                    }
+                    ps.executeBatch();
+                }
+            });
             tx.commit();
             return true;
         } catch (Exception e) {
@@ -167,6 +183,11 @@ public class NguyenVongDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private static void setNullableDouble(java.sql.PreparedStatement ps, int idx, Double val) throws java.sql.SQLException {
+        if (val != null) ps.setDouble(idx, val);
+        else ps.setNull(idx, java.sql.Types.DOUBLE);
     }
 
     // ── BATCH INSERT (Cho Import Excel) ──────────────────

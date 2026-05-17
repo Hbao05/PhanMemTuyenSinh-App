@@ -6,7 +6,9 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import util.HibernateUtil;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DiemThiDAO {
 
@@ -58,21 +60,28 @@ public class DiemThiDAO {
         } catch (Exception e) { e.printStackTrace(); return null; }
     }
 
-    public boolean existsByCccd(String cccd) {
+    public boolean existsByCccdAndPhuongThuc(String cccd, String phuongThuc) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Long count = session.createQuery(
-                    "SELECT count(d) FROM DiemThiXetTuyen d WHERE d.cccd = :cccd", Long.class)
-                    .setParameter("cccd", cccd).uniqueResult();
+                            "SELECT count(d) FROM DiemThiXetTuyen d " +
+                                    "WHERE d.cccd = :cccd AND d.phuongThuc = :pt", Long.class)
+                    .setParameter("cccd", cccd)
+                    .setParameter("pt", phuongThuc)
+                    .uniqueResult();
             return count != null && count > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
-    public boolean existsByCccdExcludeId(String cccd, int excludeId) {
+    public boolean existsByCccdAndPhuongThucExcludeId(String cccd, String phuongThuc, int excludeId) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Long count = session.createQuery(
-                    "SELECT count(d) FROM DiemThiXetTuyen d WHERE d.cccd = :cccd AND d.idDiemThi <> :id",
-                    Long.class)
-                    .setParameter("cccd", cccd).setParameter("id", excludeId).uniqueResult();
+                            "SELECT count(d) FROM DiemThiXetTuyen d " +
+                                    "WHERE d.cccd = :cccd AND d.phuongThuc = :pt AND d.idDiemThi <> :id",
+                            Long.class)
+                    .setParameter("cccd", cccd)
+                    .setParameter("pt", phuongThuc)
+                    .setParameter("id", excludeId)
+                    .uniqueResult();
             return count != null && count > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
@@ -80,11 +89,16 @@ public class DiemThiDAO {
     // ── PHÂN TRANG TẤT CẢ ────────────────────────────────
     public List<DiemThiXetTuyen> getPaginatedList(int offset, int limit) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<DiemThiXetTuyen> q = session.createQuery(
-                    "FROM DiemThiXetTuyen d ORDER BY d.phuongThuc, d.cccd", DiemThiXetTuyen.class);
-            q.setFirstResult(offset); q.setMaxResults(limit);
+            // SỬA TẠI ĐÂY: Thay đổi trọng số THPT lên trước, và đổi idDiemThi thành ASC (Tăng dần)
+            String hql = "FROM DiemThiXetTuyen d ORDER BY CASE WHEN d.phuongThuc = '4' THEN 1 ELSE 2 END ASC, d.idDiemThi ASC";
+            Query<DiemThiXetTuyen> q = session.createQuery(hql, DiemThiXetTuyen.class);
+            q.setFirstResult(offset);
+            q.setMaxResults(limit);
             return q.list();
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
     }
 
     public long countTotal() {
@@ -146,5 +160,57 @@ public class DiemThiDAO {
                     "FROM DiemThiXetTuyen d WHERE d.phuongThuc = :pt", DiemThiXetTuyen.class)
                     .setParameter("pt", pt).list();
         } catch (Exception e) { e.printStackTrace(); return List.of(); }
+    }
+
+    // ── LẤY TẤT CẢ (cho engine xét tuyển) ───────────────
+    public List<DiemThiXetTuyen> getAll() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM DiemThiXetTuyen d ORDER BY d.cccd", DiemThiXetTuyen.class).list();
+        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+    }
+
+    /**
+     * Lấy tất cả (cccd + phuongThuc) đang có trong DB về một lần duy nhất.
+     * Dùng để check trùng phía Java, tránh N+1 query.
+     */
+    public Set<String> getAllExistingKeys() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<Object[]> rows = session.createQuery(
+                            "SELECT d.cccd, d.phuongThuc FROM DiemThiXetTuyen d", Object[].class)
+                    .list();
+            Set<String> keys = new HashSet<>();
+            for (Object[] r : rows) keys.add(r[0] + "_" + r[1]);
+            return keys;
+        } catch (Exception e) { e.printStackTrace(); return new HashSet<>(); }
+    }
+
+    /**
+     * Insert nhiều bản ghi trong một session + một transaction duy nhất.
+     * Flush + clear định kỳ để tránh OutOfMemory với file lớn.
+     */
+    public int[] insertBatch(List<DiemThiXetTuyen> list) {
+        int success = 0, error = 0;
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            int count = 0;
+            for (DiemThiXetTuyen dt : list) {
+                session.persist(dt);
+                count++;
+                if (count % 50 == 0) {   // flush mỗi 50 dòng
+                    session.flush();
+                    session.clear();
+                }
+            }
+            tx.commit();
+            success = list.size();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            e.printStackTrace();
+            error = list.size();
+            success = 0;
+        }
+        return new int[]{success, error};
     }
 }
