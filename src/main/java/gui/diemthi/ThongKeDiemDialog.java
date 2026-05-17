@@ -48,17 +48,17 @@ public class ThongKeDiemDialog extends JDialog {
         JPanel pnlFilter = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlFilter.setOpaque(false);
 
-        cboPhuongThuc = new JComboBox<>(new String[]{"THPT", "VSAT", "DGNL"});
+        cboPhuongThuc = new JComboBox<>(new String[]{"THPT (4)", "VSAT (3)", "ĐGNL (2)"});
         cboMon        = new JComboBox<>();
         cboPhuongThuc.setFont(UIConstants.FONT_NORMAL);
         cboMon.setFont(UIConstants.FONT_NORMAL);
         cboPhuongThuc.setPreferredSize(new Dimension(100, 32));
         cboMon.setPreferredSize(new Dimension(130, 32));
 
-        updateMonCombo("THPT");
-
+        updateMonCombo("4");  // mặc định THPT
         cboPhuongThuc.addActionListener(e -> {
-            updateMonCombo((String) cboPhuongThuc.getSelectedItem());
+            String maPt = getMaPhuongThuc((String) cboPhuongThuc.getSelectedItem());
+            updateMonCombo(maPt);
             loadStats();
         });
         cboMon.addActionListener(e -> loadStats());
@@ -127,7 +127,7 @@ public class ThongKeDiemDialog extends JDialog {
     }
 
     private void loadStats() {
-        String pt  = (String) cboPhuongThuc.getSelectedItem();
+        String pt = getMaPhuongThuc((String) cboPhuongThuc.getSelectedItem());
         String mon = (String) cboMon.getSelectedItem();
         if (pt == null || mon == null) return;
 
@@ -176,6 +176,7 @@ public class ThongKeDiemDialog extends JDialog {
         chart.setBackgroundPaint(Color.WHITE);
 
         currentChart = chart;
+
         ChartPanel cp = new ChartPanel(chart);
         cp.setPreferredSize(new Dimension(400, 300));
         pnlChart.add(cp, BorderLayout.CENTER);
@@ -201,5 +202,12 @@ public class ThongKeDiemDialog extends JDialog {
 
     private String f(double val) {
         return String.format("%.2f", val);
+    }
+    //HELPER
+    private String getMaPhuongThuc(String display) {
+        if (display == null) return "4";
+        if (display.contains("3")) return "3";
+        if (display.contains("2")) return "2";
+        return "4"; // mặc định THPT
     }
 }

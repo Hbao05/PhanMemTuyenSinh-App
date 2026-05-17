@@ -22,18 +22,25 @@ public class DiemThiDialog extends JDialog {
     private CardLayout      cardScore;
     private JPanel          pnlScore;
 
-    // THPT/VSAT fields (shared, label differs)
-    private JSpinner spToan, spLy, spHoa, spSinh, spVan, spSu, spDia, spTiengAnh;
-    // ĐGNL fields
-    private JSpinner spNl1, spNk1, spNk2, spCncn, spCnnn, spKtpl;
+    // Spinners THPT (thang 10)
+    private JSpinner spThptToan, spThptLy, spThptHoa, spThptSinh;
+    private JSpinner spThptVan, spThptSu, spThptDia, spThptN1;
+
+    // Spinners VSAT (thang 150, Tiếng Anh → N1_THI)
+    private JSpinner spVsatToan, spVsatLy, spVsatHoa, spVsatSinh;
+    private JSpinner spVsatVan, spVsatSu, spVsatDia, spVsatN1;
+
+    // Spinners ĐGNL
+    private JSpinner spNl1, spNk1, spNk2, spNk3, spNk4, spNk5, spNk6, spNk7, spNk8, spNk9, spNk10;
+    private JSpinner spCncn, spCnnn, spKtpl;
 
     public DiemThiDialog(Window parent, DiemThiXetTuyen target, DiemThiBUS bus) {
         super(parent,
-              target == null ? "Thêm mới điểm thi" : "Sửa điểm thi",
-              ModalityType.APPLICATION_MODAL);
+                target == null ? "Thêm mới điểm thi" : "Sửa điểm thi",
+                ModalityType.APPLICATION_MODAL);
         this.bus    = bus;
         this.target = target;
-        setSize(540, 580);
+        setSize(560, 620);
         setLocationRelativeTo(parent);
         setResizable(false);
         initUI();
@@ -58,55 +65,60 @@ public class DiemThiDialog extends JDialog {
         center.setOpaque(false);
         center.setBorder(new EmptyBorder(0, 20, 0, 20));
 
-        // ── Phần thông tin chung ──
+        // ── Thông tin chung ──
         JPanel pnlInfo = new JPanel(new GridBagLayout());
         pnlInfo.setOpaque(false);
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets  = new Insets(4, 4, 4, 4);
-        gc.anchor  = GridBagConstraints.WEST;
+        gc.insets = new Insets(4, 4, 4, 4);
+        gc.anchor = GridBagConstraints.WEST;
 
         txtCccd = new CustomTextField(18);
         txtSbd  = new CustomTextField(18);
-
-        addRow(pnlInfo, gc, 0, "CCCD *",    txtCccd);
+        addRow(pnlInfo, gc, 0, "CCCD *",      txtCccd);
         addRow(pnlInfo, gc, 1, "Số báo danh", txtSbd);
+
+        // Khóa CCCD và phương thức khi đang sửa
+        if (target != null) {
+            txtCccd.setEditable(false);
+            txtCccd.setBackground(new Color(230, 230, 230));
+        }
 
         // ── Radio phương thức ──
         JPanel pnlPt = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlPt.setOpaque(false);
         rdoThpt = new JRadioButton("THPT");
         rdoVsat = new JRadioButton("VSAT");
-        rdoDgnl = new JRadioButton("DGNL");
+        rdoDgnl = new JRadioButton("ĐGNL");
         rdoThpt.setFont(UIConstants.FONT_BOLD); rdoThpt.setOpaque(false);
         rdoVsat.setFont(UIConstants.FONT_BOLD); rdoVsat.setOpaque(false);
         rdoDgnl.setFont(UIConstants.FONT_BOLD); rdoDgnl.setOpaque(false);
         ButtonGroup bg = new ButtonGroup();
         bg.add(rdoThpt); bg.add(rdoVsat); bg.add(rdoDgnl);
         rdoThpt.setSelected(true);
+
+        // Khi sửa: khóa radio, không cho đổi phương thức
+        if (target != null) {
+            rdoThpt.setEnabled(false);
+            rdoVsat.setEnabled(false);
+            rdoDgnl.setEnabled(false);
+        }
+
         pnlPt.add(new JLabel("Phương thức *:") {{ setFont(UIConstants.FONT_BOLD); }});
         pnlPt.add(rdoThpt); pnlPt.add(rdoVsat); pnlPt.add(rdoDgnl);
         addRow(pnlInfo, gc, 2, null, pnlPt);
-
         center.add(pnlInfo, BorderLayout.NORTH);
 
-        // ── Card panels cho điểm ──
+        // ── Card panels ──
         cardScore = new CardLayout();
         pnlScore  = new JPanel(cardScore);
         pnlScore.setOpaque(false);
 
-        // Tạo spinners THPT/VSAT (chung model, max thay đổi theo PT)
-        spToan    = makeSpinner(0, 150, 0.25);
-        spLy      = makeSpinner(0, 150, 0.25);
-        spHoa     = makeSpinner(0, 150, 0.25);
-        spSinh    = makeSpinner(0, 150, 0.25);
-        spVan     = makeSpinner(0, 150, 0.25);
-        spSu      = makeSpinner(0, 150, 0.25);
-        spDia     = makeSpinner(0, 150, 0.25);
-        spTiengAnh= makeSpinner(0, 150, 0.25);
+        // Tạo TẤT CẢ spinners trước khi build panels
+        buildAllSpinners();
 
-        pnlScore.add(buildThptVsatPanel(), "THPT");
-        pnlScore.add(buildThptVsatPanel2(), "VSAT");
-        pnlScore.add(buildDgnlPanel(),     "DGNL");
+        pnlScore.add(buildThptPanel(), "THPT");
+        pnlScore.add(buildVsatPanel(), "VSAT");
+        pnlScore.add(buildDgnlPanel(), "DGNL");
 
         cardScore.show(pnlScore, "THPT");
         center.add(pnlScore, BorderLayout.CENTER);
@@ -115,8 +127,8 @@ public class DiemThiDialog extends JDialog {
         // ── Buttons ──
         JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         pnlBtn.setOpaque(false);
-        CustomButton btnSave   = new CustomButton("Lưu",  UIConstants.SUCCESS_COLOR);
-        CustomButton btnCancel = new CustomButton("Hủy",  UIConstants.GRAY_COLOR);
+        CustomButton btnSave   = new CustomButton("Lưu", UIConstants.SUCCESS_COLOR);
+        CustomButton btnCancel = new CustomButton("Hủy", UIConstants.GRAY_COLOR);
         btnSave.setPreferredSize(new Dimension(110, 36));
         btnCancel.setPreferredSize(new Dimension(90, 36));
         btnSave.addActionListener(e -> doSave());
@@ -124,42 +136,78 @@ public class DiemThiDialog extends JDialog {
         pnlBtn.add(btnSave); pnlBtn.add(btnCancel);
         root.add(pnlBtn, BorderLayout.SOUTH);
 
-        // ── Radio listeners ──
+        // ── Radio listeners (chỉ khi thêm mới) ──
         rdoThpt.addActionListener(e -> cardScore.show(pnlScore, "THPT"));
         rdoVsat.addActionListener(e -> cardScore.show(pnlScore, "VSAT"));
         rdoDgnl.addActionListener(e -> cardScore.show(pnlScore, "DGNL"));
     }
 
-    private JPanel buildThptVsatPanel() {
+    /** Khởi tạo tất cả spinners trước - tách khỏi buildPanel để fillForm luôn có object */
+    private void buildAllSpinners() {
+        // THPT: thang 10
+        spThptToan = makeSpinner(0, 10, 0.25);
+        spThptLy   = makeSpinner(0, 10, 0.25);
+        spThptHoa  = makeSpinner(0, 10, 0.25);
+        spThptSinh = makeSpinner(0, 10, 0.25);
+        spThptVan  = makeSpinner(0, 10, 0.25);
+        spThptSu   = makeSpinner(0, 10, 0.25);
+        spThptDia  = makeSpinner(0, 10, 0.25);
+        spThptN1   = makeSpinner(0, 10, 0.25);  // N1_THI
+
+        // VSAT: thang 150
+        spVsatToan = makeSpinner(0, 150, 0.25);
+        spVsatLy   = makeSpinner(0, 150, 0.25);
+        spVsatHoa  = makeSpinner(0, 150, 0.25);
+        spVsatSinh = makeSpinner(0, 150, 0.25);
+        spVsatVan  = makeSpinner(0, 150, 0.25);
+        spVsatSu   = makeSpinner(0, 150, 0.25);
+        spVsatDia  = makeSpinner(0, 150, 0.25);
+        spVsatN1   = makeSpinner(0, 150, 0.25); // N1_THI
+
+        // ĐGNL: thang 1000
+        spNl1  = makeSpinner(0, 1200, 1);
+        spNk1  = makeSpinner(0, 1200, 1);
+        spNk2  = makeSpinner(0, 1200, 1);
+        spNk3  = makeSpinner(0, 1200, 1);
+        spNk4  = makeSpinner(0, 1200, 1);
+        spNk5  = makeSpinner(0, 1200, 1);
+        spNk6  = makeSpinner(0, 1200, 1);
+        spNk7  = makeSpinner(0, 1200, 1);
+        spNk8  = makeSpinner(0, 1200, 1);
+        spNk9  = makeSpinner(0, 1200, 1);
+        spNk10 = makeSpinner(0, 1200, 1);
+        spCncn = makeSpinner(0, 1200, 1);
+        spCnnn = makeSpinner(0, 1200, 1);
+        spKtpl = makeSpinner(0, 1200, 1);
+    }
+
+    private JPanel buildThptPanel() {
         return buildScoreGrid(new Object[][]{
-            {"Toán (0-10)", spToan}, {"Lý (0-10)", spLy},
-            {"Hóa (0-10)", spHoa},  {"Sinh (0-10)", spSinh},
-            {"Văn (0-10)", spVan},  {"Sử (0-10)", spSu},
-            {"Địa (0-10)", spDia},  {"Tiếng Anh (0-10)", spTiengAnh},
+                {"Toán (0-10)",      spThptToan}, {"Lý (0-10)",       spThptLy},
+                {"Hóa (0-10)",       spThptHoa},  {"Sinh (0-10)",     spThptSinh},
+                {"Văn (0-10)",       spThptVan},  {"Sử (0-10)",       spThptSu},
+                {"Địa (0-10)",       spThptDia},  {"Tiếng Anh (0-10)",spThptN1},
         }, "Điểm thi THPT");
     }
 
-    private JPanel buildThptVsatPanel2() {
-        // Tái dùng cùng spinner nhưng với label VSAT
+    private JPanel buildVsatPanel() {
         return buildScoreGrid(new Object[][]{
-            {"Toán (0-150)", spToan}, {"Lý (0-150)", spLy},
-            {"Hóa (0-150)", spHoa},  {"Sinh (0-150)", spSinh},
-            {"Văn (0-150)", spVan},  {"Sử (0-150)", spSu},
-            {"Địa (0-150)", spDia},  {"Tiếng Anh (0-150)", spTiengAnh},
+                {"Toán (0-150)",      spVsatToan}, {"Lý (0-150)",        spVsatLy},
+                {"Hóa (0-150)",       spVsatHoa},  {"Sinh (0-150)",      spVsatSinh},
+                {"Văn (0-150)",       spVsatVan},  {"Sử (0-150)",        spVsatSu},
+                {"Địa (0-150)",       spVsatDia},  {"Tiếng Anh (0-150)", spVsatN1},
         }, "Điểm thi V-SAT");
     }
 
     private JPanel buildDgnlPanel() {
-        spNl1  = makeSpinner(0, 1000, 1);
-        spNk1  = makeSpinner(0, 1000, 1);
-        spNk2  = makeSpinner(0, 1000, 1);
-        spCncn = makeSpinner(0, 1000, 1);
-        spCnnn = makeSpinner(0, 1000, 1);
-        spKtpl = makeSpinner(0, 1000, 1);
         return buildScoreGrid(new Object[][]{
-            {"NL1",  spNl1},  {"NK1", spNk1},
-            {"NK2",  spNk2},  {"CNCN", spCncn},
-            {"CNNN", spCnnn}, {"KTPL", spKtpl},
+                {"NL1 (0-1200)",  spNl1},  {"CNCN",          spCncn},
+                {"CNNN",          spCnnn}, {"KTPL",           spKtpl},
+                {"NK1",           spNk1},  {"NK2",            spNk2},
+                {"NK3",           spNk3},  {"NK4",            spNk4},
+                {"NK5",           spNk5},  {"NK6",            spNk6},
+                {"NK7",           spNk7},  {"NK8",            spNk8},
+                {"NK9",           spNk9},  {"NK10",           spNk10},
         }, "Điểm thi ĐGNL");
     }
 
@@ -204,62 +252,117 @@ public class DiemThiDialog extends JDialog {
     }
 
     private void fillForm() {
-        txtCccd.setText(target.getCccd()       != null ? target.getCccd()       : "");
-        txtSbd.setText(target.getSoBaoDanh()    != null ? target.getSoBaoDanh() : "");
+        txtCccd.setText(nvl(target.getCccd()));
+        txtSbd.setText(nvl(target.getSoBaoDanh()));
 
         String pt = target.getPhuongThuc();
-        if ("VSAT".equals(pt))  { rdoVsat.setSelected(true); cardScore.show(pnlScore, "VSAT"); }
-        else if ("DGNL".equals(pt)) { rdoDgnl.setSelected(true); cardScore.show(pnlScore, "DGNL"); }
-        else                    { rdoThpt.setSelected(true); cardScore.show(pnlScore, "THPT"); }
+        if ("3".equals(pt)) {
+            rdoVsat.setSelected(true);
+            cardScore.show(pnlScore, "VSAT");
+            // VSAT: điểm các môn lưu ở cùng cột THPT (TO, LI, HO, SI, VA, SU, DI)
+            // Tiếng Anh VSAT lưu ở N1_THI
+            safeSet(spVsatToan, target.getDiemToan());
+            safeSet(spVsatLy,   target.getDiemLy());
+            safeSet(spVsatHoa,  target.getDiemHoa());
+            safeSet(spVsatSinh, target.getDiemSinh());
+            safeSet(spVsatVan,  target.getDiemVan());
+            safeSet(spVsatSu,   target.getDiemSu());
+            safeSet(spVsatDia,  target.getDiemDia());
+            safeSet(spVsatN1,   target.getN1Thi());  // N1_THI ← đúng cột
 
-        safeSet(spToan,    target.getDiemToan());
-        safeSet(spLy,      target.getDiemLy());
-        safeSet(spHoa,     target.getDiemHoa());
-        safeSet(spSinh,    target.getDiemSinh());
-        safeSet(spVan,     target.getDiemVan());
-        safeSet(spSu,      target.getDiemSu());
-        safeSet(spDia,     target.getDiemDia());
-        safeSet(spTiengAnh,target.getDiemTiengAnh());
-
-        if (spNl1 != null) {
+        } else if ("2".equals(pt)) {
+            rdoDgnl.setSelected(true);
+            cardScore.show(pnlScore, "DGNL");
             safeSet(spNl1,  target.getNl1());
             safeSet(spNk1,  target.getNk1());
             safeSet(spNk2,  target.getNk2());
+            safeSet(spNk3,  target.getNk3());
+            safeSet(spNk4,  target.getNk4());
+            safeSet(spNk5,  target.getNk5());
+            safeSet(spNk6,  target.getNk6());
+            safeSet(spNk7,  target.getNk7());
+            safeSet(spNk8,  target.getNk8());
+            safeSet(spNk9,  target.getNk9());
+            safeSet(spNk10, target.getNk10());
             safeSet(spCncn, target.getCncn());
             safeSet(spCnnn, target.getCnnn());
             safeSet(spKtpl, target.getDiemKtpl());
+
+        } else {
+            // THPT (pt = "4")
+            rdoThpt.setSelected(true);
+            cardScore.show(pnlScore, "THPT");
+            safeSet(spThptToan, target.getDiemToan());
+            safeSet(spThptLy,   target.getDiemLy());
+            safeSet(spThptHoa,  target.getDiemHoa());
+            safeSet(spThptSinh, target.getDiemSinh());
+            safeSet(spThptVan,  target.getDiemVan());
+            safeSet(spThptSu,   target.getDiemSu());
+            safeSet(spThptDia,  target.getDiemDia());
+            safeSet(spThptN1,   target.getN1Thi()); // N1_THI
         }
     }
 
     private void safeSet(JSpinner sp, Double val) {
-        if (val != null) sp.setValue(val);
+        if (val != null) {
+            // Clamp vào đúng range của spinner để tránh crash
+            SpinnerNumberModel m = (SpinnerNumberModel) sp.getModel();
+            double min = ((Number) m.getMinimum()).doubleValue();
+            double max = ((Number) m.getMaximum()).doubleValue();
+            sp.setValue(Math.max(min, Math.min(max, val)));
+        }
     }
 
     private void doSave() {
         DiemThiXetTuyen dt = target != null ? target : new DiemThiXetTuyen();
-
         dt.setCccd(txtCccd.getText().trim());
         dt.setSoBaoDanh(txtSbd.getText().trim());
 
-        String pt = rdoVsat.isSelected() ? "VSAT" : rdoDgnl.isSelected() ? "DGNL" : "THPT";
+        // pt lưu mã số "4"/"3"/"2"
+        String pt = rdoVsat.isSelected() ? "3" : rdoDgnl.isSelected() ? "2" : "4";
         dt.setPhuongThuc(pt);
 
-        if ("DGNL".equals(pt)) {
-            dt.setNl1(val(spNl1));   dt.setNk1(val(spNk1));
-            dt.setNk2(val(spNk2));   dt.setCncn(val(spCncn));
-            dt.setCnnn(val(spCnnn)); dt.setDiemKtpl(val(spKtpl));
-            dt.setDiemToan(null); dt.setDiemLy(null); dt.setDiemHoa(null);
-            dt.setDiemSinh(null); dt.setDiemVan(null); dt.setDiemSu(null);
-            dt.setDiemDia(null);  dt.setDiemTiengAnh(null);
+        // Null hết trước, rồi set đúng theo phương thức
+        clearAllScores(dt);
+
+        if ("4".equals(pt)) {
+            // THPT: thang 10, Tiếng Anh → N1_THI
+            dt.setDiemToan(val(spThptToan));
+            dt.setDiemLy(val(spThptLy));
+            dt.setDiemHoa(val(spThptHoa));
+            dt.setDiemSinh(val(spThptSinh));
+            dt.setDiemVan(val(spThptVan));
+            dt.setDiemSu(val(spThptSu));
+            dt.setDiemDia(val(spThptDia));
+            dt.setN1Thi(val(spThptN1));
+
+        } else if ("3".equals(pt)) {
+            // VSAT: thang 150, Tiếng Anh → N1_THI
+            dt.setDiemToan(val(spVsatToan));
+            dt.setDiemLy(val(spVsatLy));
+            dt.setDiemHoa(val(spVsatHoa));
+            dt.setDiemSinh(val(spVsatSinh));
+            dt.setDiemVan(val(spVsatVan));
+            dt.setDiemSu(val(spVsatSu));
+            dt.setDiemDia(val(spVsatDia));
+            dt.setN1Thi(val(spVsatN1));
+
         } else {
-            dt.setDiemToan(val(spToan));     dt.setDiemLy(val(spLy));
-            dt.setDiemHoa(val(spHoa));       dt.setDiemSinh(val(spSinh));
-            dt.setDiemVan(val(spVan));       dt.setDiemSu(val(spSu));
-            dt.setDiemDia(val(spDia));       dt.setDiemTiengAnh(val(spTiengAnh));
-            if (spNl1 != null) {
-                dt.setNl1(null); dt.setNk1(null); dt.setNk2(null);
-                dt.setCncn(null); dt.setCnnn(null); dt.setDiemKtpl(null);
-            }
+            // ĐGNL (pt = "2")
+            dt.setNl1(val(spNl1));
+            dt.setNk1(val(spNk1));
+            dt.setNk2(val(spNk2));
+            dt.setNk3(val(spNk3));
+            dt.setNk4(val(spNk4));
+            dt.setNk5(val(spNk5));
+            dt.setNk6(val(spNk6));
+            dt.setNk7(val(spNk7));
+            dt.setNk8(val(spNk8));
+            dt.setNk9(val(spNk9));
+            dt.setNk10(val(spNk10));
+            dt.setCncn(val(spCncn));
+            dt.setCnnn(val(spCnnn));
+            dt.setDiemKtpl(val(spKtpl));
         }
 
         String result = target == null ? bus.addDiemThi(dt) : bus.updateDiemThi(dt);
@@ -275,9 +378,24 @@ public class DiemThiDialog extends JDialog {
         }
     }
 
+    /** Null toàn bộ điểm trước khi set theo phương thức */
+    private void clearAllScores(DiemThiXetTuyen dt) {
+        dt.setDiemToan(null); dt.setDiemLy(null);  dt.setDiemHoa(null);
+        dt.setDiemSinh(null); dt.setDiemVan(null);  dt.setDiemSu(null);
+        dt.setDiemDia(null);  dt.setDiemGdcd(null); dt.setN1Thi(null);
+        dt.setN1Cc(null);     dt.setDiemTiengAnh(null); dt.setDiemKtpl(null);
+        dt.setNl1(null);
+        dt.setNk1(null); dt.setNk2(null); dt.setNk3(null); dt.setNk4(null);
+        dt.setNk5(null); dt.setNk6(null); dt.setNk7(null); dt.setNk8(null);
+        dt.setNk9(null); dt.setNk10(null);
+        dt.setCncn(null); dt.setCnnn(null);
+    }
+
     private double val(JSpinner sp) {
         return ((Number) sp.getValue()).doubleValue();
     }
+
+    private String nvl(String s) { return s != null ? s : ""; }
 
     public boolean isSaved() { return saved; }
 }

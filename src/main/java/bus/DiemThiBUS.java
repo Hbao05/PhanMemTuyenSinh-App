@@ -77,21 +77,22 @@ public class DiemThiBUS {
     private String validate(DiemThiXetTuyen dt, int excludeId) {
         String cccd = dt.getCccd() != null ? dt.getCccd().trim() : "";
         if (cccd.isEmpty()) return "CCCD khong duoc de trong!";
-        if (!thiSinhDAO.checkCccdExists(cccd)) return "CCCD \"" + cccd + "\" khong ton tai trong he thong!";
-
-        boolean isNew = excludeId < 0;
-        if (isNew && dao.existsByCccd(cccd))
-            return "CCCD \"" + cccd + "\" da co ban ghi diem thi!";
-        if (!isNew && dao.existsByCccdExcludeId(cccd, excludeId))
-            return "CCCD \"" + cccd + "\" da co ban ghi diem thi khac!";
-
-        if (dt.getPhuongThuc() == null || dt.getPhuongThuc().isBlank())
-            return "Phuong thuc khong duoc de trong!";
+        if (!thiSinhDAO.checkCccdExists(cccd)) return "CCCD \"" + cccd + "\" khong ton tai!";
 
         String pt = dt.getPhuongThuc();
-        if ("THPT".equals(pt)) return validateRange(dt, 0, 10);
-        if ("VSAT".equals(pt)) return validateRange(dt, 0, 150);
-        return null; // DGNL: no strict range check per plan
+        if (pt == null || pt.isBlank())
+            return "Phuong thuc khong duoc de trong!";
+
+        boolean isNew = excludeId < 0;
+        if (isNew && dao.existsByCccdAndPhuongThuc(cccd, pt))
+            return "CCCD \"" + cccd + "\" da co diem phuong thuc nay roi!";
+        if (!isNew && dao.existsByCccdAndPhuongThucExcludeId(cccd, pt, excludeId))
+            return "CCCD \"" + cccd + "\" da co diem phuong thuc nay o ban ghi khac!";
+
+        // Mã phương thức: '4'=THPT, '3'=VSAT, '2'=ĐGNL
+        if ("4".equals(pt)) return validateRange(dt, 0, 10);  // THPT thang 10
+        if ("3".equals(pt)) return validateRange(dt, 0, 10);  // VSAT đã quy đổi thang 10
+        return null; // '2' = ĐGNL thang 1200, không check range môn
     }
 
     // Validate tất cả điểm khác null phải trong [min, max]
@@ -105,6 +106,41 @@ public class DiemThiBUS {
         return null;
     }
 
+    /**
+     * Import danh sách điểm thi từ file Excel đã join.
+     * Mỗi dòng = 1 thí sinh x 1 phương thức.
+     * Bỏ qua dòng trùng (cccd + d_phuongthuc) đã tồn tại.
+     */
+    public String importDiemThi(List<DiemThiXetTuyen> list) {
+        if (list == null || list.isEmpty())
+            return "Lỗi: File không có dữ liệu!";
+
+        // 1. Load toàn bộ key đang tồn tại về Java — CHỈ 1 query duy nhất
+        Set<String> existingKeys = dao.getAllExistingKeys();
+
+        // 2. Phân loại phía Java, không hỏi DB từng dòng nữa
+        List<DiemThiXetTuyen> toInsert = new ArrayList<>();
+        int skip = 0;
+        for (DiemThiXetTuyen dt : list) {
+            if (dt.getCccd() == null || dt.getCccd().isBlank() ||
+                    dt.getPhuongThuc() == null || dt.getPhuongThuc().isBlank()) {
+                skip++; continue;
+            }
+            String key = dt.getCccd() + "_" + dt.getPhuongThuc();
+            if (existingKeys.contains(key)) {
+                skip++; continue;
+            }
+            toInsert.add(dt);
+        }
+
+        // 3. Insert batch — 1 transaction duy nhất
+        int[] result = dao.insertBatch(toInsert);
+
+        return String.format(
+                "Import hoàn tất!\n✓ Thêm mới : %d dòng\n⚠ Bỏ qua (trùng): %d dòng\n✗ Lỗi DB   : %d dòng",
+                result[0], skip, result[1]);
+    }
+
     // ── THỐNG KÊ ─────────────────────────────────────────
 
     /** Ánh xạ tên môn hiển thị → getter của entity. */
@@ -116,29 +152,57 @@ public class DiemThiBUS {
         Map.entry("Van",       DiemThiXetTuyen::getDiemVan),
         Map.entry("Su",        DiemThiXetTuyen::getDiemSu),
         Map.entry("Dia",       DiemThiXetTuyen::getDiemDia),
-        Map.entry("Tieng Anh", DiemThiXetTuyen::getDiemTiengAnh),
+        Map.entry("Tieng Anh", DiemThiXetTuyen::getN1Thi),
+        Map.entry("LI",        DiemThiXetTuyen::getDiemTiengAnh),
         Map.entry("NL1",       DiemThiXetTuyen::getNl1),
         Map.entry("NK1",       DiemThiXetTuyen::getNk1),
-        Map.entry("NK2",       DiemThiXetTuyen::getNk2),
+        Map.entry("NK2",  DiemThiXetTuyen::getNk2),
+        Map.entry("NK3",  DiemThiXetTuyen::getNk3),
+        Map.entry("NK4",  DiemThiXetTuyen::getNk4),
+        Map.entry("NK5",  DiemThiXetTuyen::getNk5),
+        Map.entry("NK6",  DiemThiXetTuyen::getNk6),
+        Map.entry("NK7",  DiemThiXetTuyen::getNk7),
+        Map.entry("NK8",  DiemThiXetTuyen::getNk8),
+        Map.entry("NK9",  DiemThiXetTuyen::getNk9),
+        Map.entry("NK10", DiemThiXetTuyen::getNk10),
+        Map.entry("GDCD", DiemThiXetTuyen::getDiemGdcd),
         Map.entry("CNCN",      DiemThiXetTuyen::getCncn),
         Map.entry("CNNN",      DiemThiXetTuyen::getCnnn),
         Map.entry("KTPL",      DiemThiXetTuyen::getDiemKtpl)
     );
 
     public static String[] getMonListForPhuongThuc(String pt) {
-        if ("DGNL".equals(pt)) return new String[]{"NL1","NK1","NK2","CNCN","CNNN","KTPL"};
-        return new String[]{"Toan","Ly","Hoa","Sinh","Van","Su","Dia","Tieng Anh"};
+        if ("2".equals(pt)) {
+            return new String[]{"NL1", "NK1", "NK2", "NK3", "NK4", "NK5", "NK6", "NK7", "NK8", "NK9", "NK10", "CNCN", "CNNN", "KTPL", "LI"};
+        }
+        if ("4".equals(pt) || "3".equals(pt)) {
+            return new String[]{"Toan", "Ly", "Hoa", "Sinh", "Van", "Su", "Dia", "GDCD", "Tieng Anh", "LI"};
+        }
+        return new String[0];
     }
 
-    public Stats getStats(String phuongThuc, String mon) {
-        List<DiemThiXetTuyen> list = dao.getAllByPhuongThuc(phuongThuc);
-        Function<DiemThiXetTuyen, Double> getter = MON_GETTERS.get(mon);
-        if (getter == null) return new Stats();
+    public List<DiemThiXetTuyen> getAllByPhuongThuc(String phuongThuc) {
+        return dao.getAllByPhuongThuc(phuongThuc);
+    }
 
-        double[] values = list.stream()
+    /**
+     * Phương thức thống kê tối ưu: Truyền thẳng danh sách đã được load 1 lần duy nhất từ DB vào,
+     * tránh lặp lại vòng lặp I/O gây đơ máy.
+     */
+    public Stats getStatsFromLoadedList(List<DiemThiXetTuyen> preloadedList, String mon) {
+        Function<DiemThiXetTuyen, Double> getter = MON_GETTERS.get(mon);
+        if (getter == null || preloadedList == null) return new Stats();
+
+        double[] values = preloadedList.stream()
                 .map(getter).filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue).toArray();
         return Stats.compute(values);
+    }
+
+    // Giữ nguyên các hàm cũ để tương thích ngược nếu cần, nhưng không khuyến khích gọi lặp lại trong loop.
+    public Stats getStats(String phuongThuc, String mon) {
+        List<DiemThiXetTuyen> list = dao.getAllByPhuongThuc(phuongThuc);
+        return getStatsFromLoadedList(list, mon);
     }
 
     public double[] getRawValues(String phuongThuc, String mon) {
@@ -148,6 +212,16 @@ public class DiemThiBUS {
         return list.stream()
                 .map(getter).filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue).toArray();
+    }
+
+    public double[] getScoresForThongKe(String phuongThuc, String mon) {
+        if ("VSAT".equals(phuongThuc) && "Tiếng Anh".equals(mon)) {
+            List<DiemThiXetTuyen> list = dao.getAllByPhuongThuc(phuongThuc);
+            return list.stream()
+                    .map(DiemThiXetTuyen::getN1Thi).filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue).toArray();
+        }
+        return getRawValues(phuongThuc, mon);
     }
 
     // ── STATS INNER CLASS ─────────────────────────────────

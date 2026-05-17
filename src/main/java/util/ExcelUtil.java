@@ -1,16 +1,15 @@
 package util;
 
 import entity.*;
-import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class ExcelUtil {
@@ -480,6 +479,119 @@ public class ExcelUtil {
             throw new RuntimeException("Lỗi đọc file Excel: " + e.getMessage());
         }
         return list;
+    }
+
+    /**
+     * Đọc file Excel xt_diemthixettuyen đã join sẵn.
+     * Tự động nhận diện cột theo tên header (không phụ thuộc thứ tự cột).
+     * Cột bắt buộc: cccd, d_phuongthuc
+     */
+    public static List<DiemThiXetTuyen> readDiemThiExcel(File file) {
+        List<DiemThiXetTuyen> list = new ArrayList<>();
+        DataFormatter fmt = new DataFormatter();
+
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook wb = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = wb.getSheetAt(0);
+            Row header  = sheet.getRow(0);
+            if (header == null)
+                throw new IllegalArgumentException("File không có dòng tiêu đề!");
+
+            // Bước 1: Map tên cột → index (không phân biệt hoa thường)
+            Map<String, Integer> idx = new HashMap<>();
+            for (int c = 0; c < header.getLastCellNum(); c++) {
+                Cell cell = header.getCell(c);
+                if (cell != null) {
+                    String name = fmt.formatCellValue(cell).trim().toUpperCase();
+                    idx.put(name, c);
+                }
+            }
+
+            // Bước 2: Kiểm tra cột bắt buộc
+            if (!idx.containsKey("CCCD"))
+                throw new IllegalArgumentException("File thiếu cột CCCD!");
+            if (!idx.containsKey("D_PHUONGTHUC"))
+                throw new IllegalArgumentException("File thiếu cột D_PHUONGTHUC!");
+
+            // Bước 3: Đọc từng dòng dữ liệu
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String cccd = str(row, idx, "CCCD", fmt);
+                if (cccd.isEmpty()) continue;  // bỏ qua dòng không có CCCD
+
+                String pt = str(row, idx, "D_PHUONGTHUC", fmt);
+                if (pt.isEmpty()) continue;    // bỏ qua dòng không có phương thức
+
+                DiemThiXetTuyen dt = new DiemThiXetTuyen();
+                dt.setCccd(cccd);
+                dt.setSoBaoDanh(str(row, idx, "SOBAODANH", fmt));
+                dt.setPhuongThuc(pt);          // "2", "3", hoặc "4"
+
+                // Điểm THPT / VSAT (thang 10)
+                dt.setDiemToan(    dbl(row, idx, "TO",      fmt));
+                dt.setDiemLy(      dbl(row, idx, "LI",      fmt));
+                dt.setDiemHoa(     dbl(row, idx, "HO",      fmt));
+                dt.setDiemSinh(    dbl(row, idx, "SI",      fmt));
+                dt.setDiemSu(      dbl(row, idx, "SU",      fmt));
+                dt.setDiemDia(     dbl(row, idx, "DI",      fmt));
+                dt.setDiemGdcd(    dbl(row, idx, "GDCD",    fmt));
+                dt.setDiemVan(     dbl(row, idx, "VA",      fmt));
+                dt.setN1Thi(       dbl(row, idx, "N1_THI",  fmt)); // điểm thi ngoại ngữ gốc
+                dt.setN1Cc(        dbl(row, idx, "N1_CC",   fmt)); // max(N1_THI, quy đổi CC)
+                dt.setCncn(        dbl(row, idx, "CNCN",    fmt));
+                dt.setCnnn(        dbl(row, idx, "CNNN",    fmt));
+                dt.setDiemTiengAnh(dbl(row, idx, "TI",      fmt)); // điểm chứng chỉ tiếng Anh
+                dt.setDiemKtpl(    dbl(row, idx, "KTPL",    fmt));
+
+                // Điểm ĐGNL (thang 1200)
+                dt.setNl1(         dbl(row, idx, "NL1",     fmt));
+
+                // Năng khiếu NK1→NK10
+                dt.setNk1(         dbl(row, idx, "NK1",     fmt));
+                dt.setNk2(         dbl(row, idx, "NK2",     fmt));
+                dt.setNk3(         dbl(row, idx, "NK3",     fmt));
+                dt.setNk4(         dbl(row, idx, "NK4",     fmt));
+                dt.setNk5(         dbl(row, idx, "NK5",     fmt));
+                dt.setNk6(         dbl(row, idx, "NK6",     fmt));
+                dt.setNk7(         dbl(row, idx, "NK7",     fmt));
+                dt.setNk8(         dbl(row, idx, "NK8",     fmt));
+                dt.setNk9(         dbl(row, idx, "NK9",     fmt));
+                dt.setNk10(        dbl(row, idx, "NK10",    fmt));
+
+                list.add(dt);
+            }
+
+            System.out.println("readDiemThiExcel: đọc " + list.size() + " dòng.");
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi đọc file điểm thi: " + e.getMessage(), e);
+        }
+        return list;
+    }
+
+    // Helper: đọc String theo tên cột, trả về "" nếu không có
+    private static String str(Row row, Map<String, Integer> idx,
+                              String col, DataFormatter fmt) {
+        Integer c = idx.get(col.toUpperCase());
+        if (c == null) return "";
+        Cell cell = row.getCell(c);
+        return cell == null ? "" : fmt.formatCellValue(cell).trim();
+    }
+
+    // Helper: đọc Double theo tên cột, trả về null nếu rỗng hoặc không phải số
+    private static Double dbl(Row row, Map<String, Integer> idx,
+                              String col, DataFormatter fmt) {
+        String s = str(row, idx, col, fmt);
+        if (s.isEmpty()) return null;
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return null; // bỏ qua giá trị không phải số (ví dụ "-")
+        }
     }
 
     /**

@@ -7,14 +7,14 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "xt_diemthixettuyen")
+@Table(name = "xt_diemthixettuyen", uniqueConstraints = @UniqueConstraint(name = "uq_cccd_phuongthuc", columnNames = {"cccd", "d_phuongthuc"}))
 public class DiemThiXetTuyen {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "iddiemthi")
     private int idDiemThi;
 
-    @Column(name = "cccd", unique = true, nullable = false)
+    @Column(name = "cccd", nullable = false)
     private String cccd;
 
     @Column(name = "sobaodanh")
@@ -40,6 +40,9 @@ public class DiemThiXetTuyen {
 
     @Column(name = "DI")
     private Double diemDia;
+
+    @Column(name = "GDCD")
+    private Double diemGdcd;
 
     @Column(name = "VA")
     private Double diemVan;
@@ -70,6 +73,30 @@ public class DiemThiXetTuyen {
 
     @Column(name = "NK2")
     private Double nk2;
+
+    @Column(name = "NK3")
+    private Double nk3;
+
+    @Column(name = "NK4")
+    private Double nk4;
+
+    @Column(name = "NK5")
+    private Double nk5;
+
+    @Column(name = "NK6")
+    private Double nk6;
+
+    @Column(name = "NK7")
+    private Double nk7;
+
+    @Column(name = "NK8")
+    private Double nk8;
+
+    @Column(name = "NK9")
+    private Double nk9;
+
+    @Column(name = "NK10")
+    private Double nk10;
 
     // ── Quan hệ: DiemThiXetTuyen N-1 ThiSinh (theo cccd) ──
     @OneToOne(fetch = FetchType.LAZY)
