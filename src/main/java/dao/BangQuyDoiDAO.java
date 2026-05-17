@@ -154,4 +154,38 @@ public class BangQuyDoiDAO {
             return 0;
         }
     }
+
+    // ── BATCH INSERT (cho Import Excel) ──────────────────
+    public int batchInsert(List<BangQuyDoi> list) {
+        Transaction tx = null;
+        int success = 0;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            for (int i = 0; i < list.size(); i++) {
+                session.persist(list.get(i));
+                if (i % 50 == 0) { session.flush(); session.clear(); }
+                success++;
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            e.printStackTrace();
+        }
+        return success;
+    }
+
+    // ── XÓA TẤT CẢ ──────────────────────────────────────
+    public int deleteAll() {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            int count = session.createMutationQuery("DELETE FROM BangQuyDoi").executeUpdate();
+            tx.commit();
+            return count;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
+            e.printStackTrace();
+            return -1;
+        }
+    }
 }

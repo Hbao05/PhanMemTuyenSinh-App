@@ -170,6 +170,15 @@ public class DiemThiDAO {
         } catch (Exception e) { e.printStackTrace(); return List.of(); }
     }
 
+    // ── LẤY THEO CCCD (cho chi tiết thí sinh) ────────────
+    public List<DiemThiXetTuyen> getByCccd(String cccd) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM DiemThiXetTuyen d WHERE d.cccd = :cccd", DiemThiXetTuyen.class)
+                    .setParameter("cccd", cccd).list();
+        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+    }
+
     /**
      * Lấy tất cả (cccd + phuongThuc) đang có trong DB về một lần duy nhất.
      * Dùng để check trùng phía Java, tránh N+1 query.

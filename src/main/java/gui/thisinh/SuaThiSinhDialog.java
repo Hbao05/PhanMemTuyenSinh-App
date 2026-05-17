@@ -72,7 +72,7 @@ public class SuaThiSinhDialog extends JDialog {
         pnlForm.add(txtNgaySinh);
 
         pnlForm.add(createLabel("Giới tính"));
-        cbxGioiTinh = new CustomComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
+        cbxGioiTinh = new CustomComboBox<>(new String[] { "Nam", "Nữ", "Khác" });
         pnlForm.add(cbxGioiTinh);
 
         pnlForm.add(createLabel("Nơi sinh"));
@@ -162,7 +162,8 @@ public class SuaThiSinhDialog extends JDialog {
         String result = candidateBUS.updateCandidateInfo(candidate);
 
         if (result.startsWith("Success")) {
-            JOptionPane.showMessageDialog(this, "Đã cập nhật thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Đã cập nhật thành công!", "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
             isUpdated = true; // Bật cờ hiệu để màn hình chính biết cần tải lại bảng
             dispose(); // Đóng Form
         } else {
@@ -170,7 +171,8 @@ public class SuaThiSinhDialog extends JDialog {
         }
     }
 
-    // Cho phép màn hình chính kiểm tra xem Admin có thực sự sửa không hay chỉ mở lên rồi bấm Hủy
+    // Cho phép màn hình chính kiểm tra xem Admin có thực sự sửa không hay chỉ mở
+    // lên rồi bấm Hủy
     public boolean isUpdated() {
         return isUpdated;
     }
