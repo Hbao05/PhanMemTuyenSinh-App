@@ -30,7 +30,8 @@ public class ExcelUtil {
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
             DataFormatter dataFormatter = new DataFormatter();
-            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = workbook.getCreationHelper()
+                    .createFormulaEvaluator();
 
             for (int start = 1; start <= lastRowNum; start += batchSize) {
                 int end = Math.min(start + batchSize - 1, lastRowNum);
@@ -64,7 +65,8 @@ public class ExcelUtil {
      * Thứ tự cột: cccd, sbd, họ, tên, ngày sinh, điện thoại, giới tính, email, nơi
      * sinh, đối tượng, khu vực.
      */
-    private static ThiSinh rowToThiSinh(Row row, DataFormatter dataFormatter, org.apache.poi.ss.usermodel.FormulaEvaluator evaluator) {
+    private static ThiSinh rowToThiSinh(Row row, DataFormatter dataFormatter,
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator) {
         String cccd = dataFormatter.formatCellValue(row.getCell(0), evaluator).trim();
         if (cccd.isEmpty()) {
             return null;
@@ -110,7 +112,8 @@ public class ExcelUtil {
 
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
-            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator = workbook.getCreationHelper()
+                    .createFormulaEvaluator();
             if (lastRowNum >= 1) {
                 candidateList = readCandidateRows(sheet, dataFormatter, evaluator, 1, lastRowNum);
             }
@@ -290,11 +293,11 @@ public class ExcelUtil {
                 t.setMon1(mon1);
                 t.setMon2(mon2);
                 t.setMon3(mon3);
-                
+
                 if (tenToHop.isEmpty()) {
-                    tenToHop = SubjectUtil.getSubjectName(mon1) + " - " + 
-                               SubjectUtil.getSubjectName(mon2) + " - " + 
-                               SubjectUtil.getSubjectName(mon3);
+                    tenToHop = SubjectUtil.getSubjectName(mon1) + " - " +
+                            SubjectUtil.getSubjectName(mon2) + " - " +
+                            SubjectUtil.getSubjectName(mon3);
                 }
                 t.setTenToHop(tenToHop);
 
@@ -312,7 +315,8 @@ public class ExcelUtil {
         return list;
     }
 
-    public static List<ToHopMonThi> processLegacyToHopExcel(Sheet sheet, DataFormatter fmt, org.apache.poi.ss.usermodel.FormulaEvaluator evaluator) {
+    public static List<ToHopMonThi> processLegacyToHopExcel(Sheet sheet, DataFormatter fmt,
+            org.apache.poi.ss.usermodel.FormulaEvaluator evaluator) {
         java.util.Map<String, ToHopMonThi> map = new java.util.HashMap<>();
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
@@ -345,17 +349,15 @@ public class ExcelUtil {
                 t.setMon1(m1);
                 t.setMon2(m2);
                 t.setMon3(m3);
-                t.setTenToHop(SubjectUtil.getSubjectName(m1) + " - " + 
-                              SubjectUtil.getSubjectName(m2) + " - " + 
-                              SubjectUtil.getSubjectName(m3));
+                t.setTenToHop(SubjectUtil.getSubjectName(m1) + " - " +
+                        SubjectUtil.getSubjectName(m2) + " - " +
+                        SubjectUtil.getSubjectName(m3));
                 map.put(ma, t);
             }
         }
         System.out.println("readToHopExcel (legacy): đọc được " + map.size() + " tổ hợp.");
         return new java.util.ArrayList<>(map.values());
     }
-
-
 
     private static boolean isNumeric(String s) {
         try {
