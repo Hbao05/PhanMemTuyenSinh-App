@@ -16,7 +16,8 @@ public class ToHopDialog extends JDialog {
     private ToHopMonThi toHop;
     private boolean isSaved = false;
 
-    private CustomTextField txtMaToHop, txtMon1, txtMon2, txtMon3, txtTenToHop;
+    private CustomTextField txtMaToHop, txtTenToHop;
+    private JComboBox<String> cbxMon1, cbxMon2, cbxMon3;
 
     public ToHopDialog(Window parent, ToHopMonThi toHop, ToHopMonThiBUS bus) {
         super(parent, toHop == null ? "Thêm tổ hợp mới" : "Cập nhật tổ hợp", ModalityType.APPLICATION_MODAL);
@@ -54,20 +55,25 @@ public class ToHopDialog extends JDialog {
         pnlForm.add(txtMaToHop);
 
         pnlForm.add(createLabel("Môn 1 (*)"));
-        txtMon1 = new CustomTextField(20);
-        pnlForm.add(txtMon1);
+        cbxMon1 = new JComboBox<>(util.SubjectUtil.SUBJECT_CODES);
+        pnlForm.add(cbxMon1);
 
         pnlForm.add(createLabel("Môn 2 (*)"));
-        txtMon2 = new CustomTextField(20);
-        pnlForm.add(txtMon2);
+        cbxMon2 = new JComboBox<>(util.SubjectUtil.SUBJECT_CODES);
+        pnlForm.add(cbxMon2);
 
         pnlForm.add(createLabel("Môn 3 (*)"));
-        txtMon3 = new CustomTextField(20);
-        pnlForm.add(txtMon3);
+        cbxMon3 = new JComboBox<>(util.SubjectUtil.SUBJECT_CODES);
+        pnlForm.add(cbxMon3);
+
+        cbxMon1.addActionListener(e -> autoGenTenToHop());
+        cbxMon2.addActionListener(e -> autoGenTenToHop());
+        cbxMon3.addActionListener(e -> autoGenTenToHop());
 
         pnlForm.add(createLabel("Tên tổ hợp"));
         txtTenToHop = new CustomTextField(20);
-        txtTenToHop.setToolTipText("Ví dụ: Toán, Lý, Hóa");
+        txtTenToHop.setEditable(false);
+        txtTenToHop.setBackground(new Color(245, 245, 245));
         pnlForm.add(txtTenToHop);
 
         pnlBody.add(pnlForm, BorderLayout.NORTH);
@@ -95,19 +101,31 @@ public class ToHopDialog extends JDialog {
         txtMaToHop.setEditable(false);
         txtMaToHop.setBackground(new Color(235, 235, 235));
 
-        txtMon1.setText(toHop.getMon1());
-        txtMon2.setText(toHop.getMon2());
-        txtMon3.setText(toHop.getMon3());
+        cbxMon1.setSelectedItem(toHop.getMon1());
+        cbxMon2.setSelectedItem(toHop.getMon2());
+        cbxMon3.setSelectedItem(toHop.getMon3());
         txtTenToHop.setText(toHop.getTenToHop() != null ? toHop.getTenToHop() : "");
     }
 
     private void save() {
         ToHopMonThi data = (toHop != null) ? toHop : new ToHopMonThi();
         data.setMaToHop(txtMaToHop.getText().trim());
-        data.setMon1(txtMon1.getText().trim());
-        data.setMon2(txtMon2.getText().trim());
-        data.setMon3(txtMon3.getText().trim());
-        data.setTenToHop(txtTenToHop.getText().trim().isEmpty() ? null : txtTenToHop.getText().trim());
+        String m1 = (String) cbxMon1.getSelectedItem();
+        String m2 = (String) cbxMon2.getSelectedItem();
+        String m3 = (String) cbxMon3.getSelectedItem();
+
+        if (m1 != null && m2 != null && m3 != null) {
+            if (m1.equals(m2) || m1.equals(m3) || m2.equals(m3)) {
+                JOptionPane.showMessageDialog(this, "Các môn trong tổ hợp không được trùng nhau!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        
+        data.setMon1(m1);
+        data.setMon2(m2);
+        data.setMon3(m3);
+        
+        data.setTenToHop(txtTenToHop.getText().trim());
 
         String result = (toHop == null)
                 ? bus.addToHop(data)
@@ -130,4 +148,16 @@ public class ToHopDialog extends JDialog {
     }
 
     public boolean isSaved() { return isSaved; }
+
+    private void autoGenTenToHop() {
+        String m1 = (String) cbxMon1.getSelectedItem();
+        String m2 = (String) cbxMon2.getSelectedItem();
+        String m3 = (String) cbxMon3.getSelectedItem();
+        if (m1 != null && m2 != null && m3 != null) {
+            String ten = util.SubjectUtil.getSubjectName(m1) + " - " + 
+                         util.SubjectUtil.getSubjectName(m2) + " - " + 
+                         util.SubjectUtil.getSubjectName(m3);
+            txtTenToHop.setText(ten);
+        }
+    }
 }
