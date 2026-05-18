@@ -86,21 +86,23 @@ public class XetTuyenDialog extends JDialog {
         progressBar.setString("Đang xử lý...");
         lblStatus.setText("Đang tính điểm...");
 
-        SwingWorker<String, int[]> worker = new SwingWorker<>() {
+        SwingWorker<String, String[]> worker = new SwingWorker<>() {
             @Override
             protected String doInBackground() {
-                return bus.runXetTuyen((done, total) ->
-                        publish(new int[]{done, total}));
+                return bus.runXetTuyen((done, total, phase) ->
+                        publish(new String[]{String.valueOf(done), String.valueOf(total), phase}));
             }
 
             @Override
-            protected void process(java.util.List<int[]> chunks) {
-                int[] last = chunks.getLast();
-                int done = last[0], total = last[1];
+            protected void process(java.util.List<String[]> chunks) {
+                String[] last = chunks.getLast();
+                int done = Integer.parseInt(last[0]);
+                int total = Integer.parseInt(last[1]);
+                String phase = last[2];
                 int pct = total == 0 ? 0 : (int) (done * 100.0 / total);
                 progressBar.setValue(pct);
                 progressBar.setString(pct + "%");
-                lblStatus.setText("Đang xử lý: " + done + " / " + total + " nguyện vọng...");
+                lblStatus.setText(phase + " — " + done + " / " + total + " nguyện vọng");
             }
 
             @Override

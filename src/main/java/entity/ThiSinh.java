@@ -56,11 +56,11 @@ public class ThiSinh {
     @Column(name = "khu_vuc")
     private String khuVuc;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private DiemThiXetTuyen diemThi;
+    private List<DiemThiXetTuyen> diemThi;
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)

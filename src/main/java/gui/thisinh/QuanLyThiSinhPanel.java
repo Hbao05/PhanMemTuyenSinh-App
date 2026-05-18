@@ -445,46 +445,80 @@ public class QuanLyThiSinhPanel extends JPanel {
         }
         pnlLeft.add(new JScrollPane(pnlInfo), BorderLayout.CENTER);
 
-        // Cột 2: Điểm thi
+        // Cột 2: Điểm thi (hiển thị tất cả phương thức)
         JPanel pnlRight = new JPanel(new BorderLayout());
         pnlRight.setOpaque(false);
         pnlRight.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Điểm thi", 0, 0, UIConstants.FONT_BOLD));
-        
-        JPanel pnlScores = new JPanel(new GridLayout(0, 2, 8, 10));
-        pnlScores.setOpaque(false);
-        pnlScores.setBorder(new EmptyBorder(10, 15, 10, 15));
 
-        entity.DiemThiXetTuyen dt = ts.getDiemThi();
-        String[][] rowsScores;
-        if (dt != null) {
-            rowsScores = new String[][] {
-                { "Toán", dt.getDiemToan() != null ? dt.getDiemToan().toString() : "-" },
-                { "Văn", dt.getDiemVan() != null ? dt.getDiemVan().toString() : "-" },
-                { "Ngoại ngữ (Thi)", dt.getN1Thi() != null ? dt.getN1Thi().toString() : "-" },
-                { "Ngoại ngữ (QĐ)", dt.getN1Cc() != null ? dt.getN1Cc().toString() : "-" },
-                { "Lý", dt.getDiemLy() != null ? dt.getDiemLy().toString() : "-" },
-                { "Hóa", dt.getDiemHoa() != null ? dt.getDiemHoa().toString() : "-" },
-                { "Sinh", dt.getDiemSinh() != null ? dt.getDiemSinh().toString() : "-" },
-                { "Sử", dt.getDiemSu() != null ? dt.getDiemSu().toString() : "-" },
-                { "Địa", dt.getDiemDia() != null ? dt.getDiemDia().toString() : "-" },
-                { "GDCD/KTPL", dt.getDiemKtpl() != null ? dt.getDiemKtpl().toString() : "-" },
-                { "ĐGNL/V-SAT", dt.getNl1() != null ? dt.getNl1().toString() : "-" },
-            };
+        // Load điểm thi riêng (tránh LazyInitializationException)
+        java.util.List<entity.DiemThiXetTuyen> diemThiList = new dao.DiemThiDAO().getByCccd(ts.getCccd());
+
+        JPanel pnlAllScores = new JPanel();
+        pnlAllScores.setLayout(new BoxLayout(pnlAllScores, BoxLayout.Y_AXIS));
+        pnlAllScores.setOpaque(false);
+
+        if (diemThiList == null || diemThiList.isEmpty()) {
+            JLabel lblNoScore = new JLabel("Chưa có điểm thi");
+            lblNoScore.setFont(UIConstants.FONT_NORMAL);
+            lblNoScore.setBorder(new EmptyBorder(20, 15, 20, 15));
+            pnlAllScores.add(lblNoScore);
         } else {
-            rowsScores = new String[][] { { "Trạng thái", "Chưa có điểm thi" } };
+            for (entity.DiemThiXetTuyen dt : diemThiList) {
+                String ptLabel = switch (dt.getPhuongThuc() != null ? dt.getPhuongThuc() : "") {
+                    case "2", "DGNL" -> "ĐGNL";
+                    case "3", "VSAT" -> "V-SAT";
+                    case "4", "THPT" -> "THPT";
+                    default -> dt.getPhuongThuc() != null ? dt.getPhuongThuc() : "Khác";
+                };
+
+                JPanel pnlSection = new JPanel(new GridLayout(0, 2, 8, 6));
+                pnlSection.setOpaque(false);
+                pnlSection.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(UIConstants.PRIMARY_COLOR),
+                                "Phương thức: " + ptLabel, 0, 0, UIConstants.FONT_BOLD, UIConstants.PRIMARY_COLOR),
+                        new EmptyBorder(5, 10, 5, 10)));
+
+                String[][] rows;
+                if ("2".equals(dt.getPhuongThuc()) || "DGNL".equals(dt.getPhuongThuc())) {
+                    rows = new String[][] {
+                        { "Điểm ĐGNL (NL1)", fmtScore(dt.getNl1()) },
+                    };
+                } else {
+                    rows = new String[][] {
+                        { "Toán", fmtScore(dt.getDiemToan()) },
+                        { "Văn", fmtScore(dt.getDiemVan()) },
+                        { "Ngoại ngữ (Thi)", fmtScore(dt.getN1Thi()) },
+                        { "Ngoại ngữ (QĐ)", fmtScore(dt.getN1Cc()) },
+                        { "Lý", fmtScore(dt.getDiemLy()) },
+                        { "Hóa", fmtScore(dt.getDiemHoa()) },
+                        { "Sinh", fmtScore(dt.getDiemSinh()) },
+                        { "Sử", fmtScore(dt.getDiemSu()) },
+                        { "Địa", fmtScore(dt.getDiemDia()) },
+                        { "GDCD/KTPL", fmtScore(dt.getDiemKtpl()) },
+                    };
+                }
+
+                for (String[] r : rows) {
+                    JLabel lKey = new JLabel(r[0] + ":");
+                    lKey.setFont(UIConstants.FONT_BOLD);
+                    lKey.setForeground(Color.DARK_GRAY);
+                    JLabel lVal = new JLabel(r[1]);
+                    lVal.setFont(UIConstants.FONT_NORMAL);
+                    lVal.setForeground(new Color(50, 50, 50));
+                    pnlSection.add(lKey);
+                    pnlSection.add(lVal);
+                }
+
+                pnlAllScores.add(pnlSection);
+                pnlAllScores.add(Box.createVerticalStrut(8));
+            }
         }
 
-        for (String[] r : rowsScores) {
-            JLabel lKey = new JLabel(r[0] + ":");
-            lKey.setFont(UIConstants.FONT_BOLD);
-            lKey.setForeground(Color.DARK_GRAY);
-            JLabel lVal = new JLabel(r[1]);
-            lVal.setFont(UIConstants.FONT_NORMAL);
-            lVal.setForeground(new Color(50, 50, 50));
-            pnlScores.add(lKey);
-            pnlScores.add(lVal);
-        }
-        pnlRight.add(new JScrollPane(pnlScores), BorderLayout.CENTER);
+        JScrollPane spScores = new JScrollPane(pnlAllScores);
+        spScores.setBorder(null);
+        spScores.getVerticalScrollBar().setUnitIncrement(12);
+        pnlRight.add(spScores, BorderLayout.CENTER);
 
         pnlContent.add(pnlLeft);
         pnlContent.add(pnlRight);
@@ -655,5 +689,10 @@ public class QuanLyThiSinhPanel extends JPanel {
         dialog.add(pnlBtn, BorderLayout.SOUTH);
 
         dialog.setVisible(true);
+    }
+
+    /** Format điểm nullable → chuỗi hiển thị */
+    private static String fmtScore(Double d) {
+        return d != null ? String.valueOf(d) : "-";
     }
 }
