@@ -180,7 +180,7 @@ public class QuanLyNganhPanel extends JPanel {
                     JTable table, Object value, boolean isSelected,
                     boolean hasFocus, int row, int col) {
                 boolean isY = "Y".equalsIgnoreCase(String.valueOf(value));
-                super.getTableCellRendererComponent(table, isY ? "Có" : "-", isSelected, hasFocus, row, col);
+                super.getTableCellRendererComponent(table, isY ? "Có" : "Không", isSelected, hasFocus, row, col);
                 if (!isSelected) setForeground(isY ? UIConstants.SUCCESS_COLOR : new Color(180, 180, 180));
                 return this;
             }

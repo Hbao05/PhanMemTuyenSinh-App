@@ -308,10 +308,19 @@ public class XetTuyenEngine {
 
             // Tìm tổ hợp × phương thức cho ĐXT cao nhất
             KetQuaTinh best = null;
+            Nganh nganhInfo = nganhMap.get(maNganh);
 
             for (DiemThiXetTuyen diemThi : danhSachDiem) {
                 String pt = diemThi.getPhuongThuc();
                 if (pt == null) continue;
+
+                // Kiểm tra xem ngành có xét tuyển theo phương thức này không (Y/N)
+                if (nganhInfo != null) {
+                    if (("2".equals(pt) || "DGNL".equalsIgnoreCase(pt)) && !"Y".equalsIgnoreCase(nganhInfo.getDgnl())) continue;
+                    if (("3".equals(pt) || "VSAT".equalsIgnoreCase(pt)) && !"Y".equalsIgnoreCase(nganhInfo.getVsat())) continue;
+                    if (("4".equals(pt) || "THPT".equalsIgnoreCase(pt)) && !"Y".equalsIgnoreCase(nganhInfo.getThpt())) continue;
+                    if (("1".equals(pt) || "TT".equalsIgnoreCase(pt) || "TUYENTHANG".equalsIgnoreCase(pt)) && !"Y".equalsIgnoreCase(nganhInfo.getTuyenThang())) continue;
+                }
 
                 for (NganhToHop nth : danhSachToHop) {
                     String maToHop = nth.getMaToHop();
@@ -358,6 +367,7 @@ public class XetTuyenEngine {
                 nv.setDiemXetTuyen(best.dxt());
                 nv.setPhuongThuc(best.phuongThuc());
                 nv.setToHopMon(best.toHopMon());
+                nv.setNvKeys(nv.getCccd() + "_" +  nv.getMaNganh() + nv.getPhuongThuc());
             }
 
             done++;
@@ -375,7 +385,6 @@ public class XetTuyenEngine {
     /**
      * Bước 7: Xét trúng tuyển theo chỉ tiêu + điểm sàn,
      * ưu tiên thứ tự nguyện vọng (nếu đậu NV trước thì không xét NV sau).
-     * <p>
      * Dùng thuật toán lặp nhiều vòng (deferred acceptance):
      * - Vòng 1: xét tất cả NV, chọn top chỉ tiêu per ngành
      * - Thí sinh đậu NV ưu tiên cao hơn → giải phóng slot ở ngành NV thấp hơn
@@ -417,7 +426,6 @@ public class XetTuyenEngine {
         int maxRounds = 100; // chống infinite loop
 
         for (int round = 0; round < maxRounds; round++) {
-            boolean changed = false;
 
             // Bước A: Per ngành, chọn top chỉ tiêu (bỏ qua thí sinh đã trúng ngành khác)
             Set<Integer> dauSetRound = new HashSet<>();
@@ -454,16 +462,6 @@ public class XetTuyenEngine {
                         break; // chỉ lấy NV đầu tiên (ưu tiên cao nhất)
                     }
                 }
-            }
-
-            // Bước C: Kiểm tra ổn định
-            if (round == 0) {
-                changed = true; // vòng đầu luôn cần chạy tiếp
-            } else {
-                // Nếu dauSetRound không thay đổi so với vòng trước → ổn định
-                // (thực tế: nếu không có thí sinh nào bị "giải phóng" slot → ổn định)
-                // Ta dùng cách đơn giản: chạy thêm 1 vòng nữa để verify
-                changed = (dauSetRound.size() != admitted.size() * 0 + dauSetRound.size()); // always check
             }
 
             // Nếu vòng 2+ mà kết quả giống vòng trước → break

@@ -191,15 +191,14 @@ public class NganhDAO {
 
     // ── CẬP NHẬT ĐIỂM TRÚNG TUYỂN + SỐ LƯỢNG THEO PHƯƠNG THỨC ──────────────
     public boolean updateDiemTrungTuyen(String maNganh, Double diemTrungTuyen,
-                                        int slTrungTuyen, int slDgnl, int slVsat, int slThpt) {
+                                        int slDgnl, int slVsat, int slThpt) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
             session.createMutationQuery(
-                    "UPDATE Nganh n SET n.diemTrungTuyen = :dtt, n.slXtt = :sl, " +
+                    "UPDATE Nganh n SET n.diemTrungTuyen = :dtt, " +
                     "n.slDgnl = :dgnl, n.slVsat = :vsat, n.slThpt = :thpt WHERE n.maNganh = :ma")
                     .setParameter("dtt", diemTrungTuyen)
-                    .setParameter("sl", slTrungTuyen)
                     .setParameter("dgnl", slDgnl)
                     .setParameter("vsat", slVsat)
                     .setParameter("thpt", slThpt)

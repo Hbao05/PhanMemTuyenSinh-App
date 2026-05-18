@@ -68,7 +68,6 @@ public class NguyenVongBUS {
     public String addNguyenVong(NguyenVongXetTuyen nv) {
         String err = validate(nv, -1);
         if (err != null) return "Error: " + err;
-        autoFill(nv);
         if (dao.existsByNvKeys(nv.getNvKeys())) return "Error: Nguyen vong nay (CCCD + Nganh) da ton tai!";
         return dao.insert(nv) ? "Success" : "Error: Khong the them vao co so du lieu!";
     }
@@ -77,7 +76,6 @@ public class NguyenVongBUS {
     public String updateNguyenVong(NguyenVongXetTuyen nv) {
         String err = validate(nv, nv.getIdNv());
         if (err != null) return "Error: " + err;
-        autoFill(nv);
         if (dao.existsByNvKeysExcludeId(nv.getNvKeys(), nv.getIdNv()))
             return "Error: Nguyen vong nay (CCCD + Nganh) da ton tai!";
         return dao.update(nv) ? "Success" : "Error: Khong the cap nhat co so du lieu!";
@@ -99,8 +97,23 @@ public class NguyenVongBUS {
         if (!nganhDAO.existsByMaNganh(maNganh)) return "Ma nganh \"" + maNganh + "\" khong ton tai!";
 
         if (nv.getThuTuNguyenVong() <= 0) return "Thu tu nguyen vong phai lon hon 0!";
-        if (nv.getPhuongThuc() == null || nv.getPhuongThuc().isBlank())
-            return "Phuong thuc khong duoc de trong!";
+
+        List<NguyenVongXetTuyen> existingNvs = dao.getByCccd(cccd);
+        int maxThuTu = 0;
+        for (NguyenVongXetTuyen e : existingNvs) {
+            if (e.getIdNv() != excludeId) {
+                if (e.getMaNganh().equalsIgnoreCase(maNganh)) {
+                    return "Thí sinh đã có nguyện vọng cho ngành này!";
+                }
+                if (e.getThuTuNguyenVong() > maxThuTu) {
+                    maxThuTu = e.getThuTuNguyenVong();
+                }
+            }
+        }
+
+        if (maxThuTu > 0 && nv.getThuTuNguyenVong() <= maxThuTu) {
+            return "Thứ tự nguyện vọng phải lớn hơn các nguyện vọng đã có sẵn (lớn nhất là " + maxThuTu + ")!";
+        }
 
         return null;
     }
@@ -108,6 +121,7 @@ public class NguyenVongBUS {
     private void autoFill(NguyenVongXetTuyen nv) {
         nv.setCccd(nv.getCccd().trim());
         nv.setMaNganh(nv.getMaNganh().trim());
+        nv.setPhuongThuc(nv.getPhuongThuc().trim());
         nv.setNvKeys(nv.getCccd() + "_" + nv.getMaNganh() + "_" + nv.getPhuongThuc());
     }
 
@@ -213,7 +227,7 @@ public class NguyenVongBUS {
                 int slThpt = (int) trungTuyenList.stream()
                         .filter(nv -> "THPT".equals(nv.getPhuongThuc()) || "4".equals(nv.getPhuongThuc())).count();
                 nganhDAO.updateDiemTrungTuyen(entry.getKey(), minDXT,
-                        trungTuyenList.size(), slDgnl, slVsat, slThpt);
+                        slDgnl, slVsat, slThpt);
             }
 
             // ── Thống kê ──
@@ -248,6 +262,14 @@ public class NguyenVongBUS {
         List<NguyenVongXetTuyen> batch = new ArrayList<>(batchSize);
         int totalProcessed = 0;
         int totalSuccess = 0;
+
+        Map<String, Nganh> nganhMap = new HashMap<>();
+        List<Nganh> nganhList = nganhDAO.getAll();
+        if (nganhList != null) {
+            for (Nganh n : nganhList) {
+                nganhMap.put(n.getMaNganh(), n);
+            }
+        }
         
         try (InputStream is = new FileInputStream(file);
              Workbook workbook = StreamingReader.builder()
@@ -293,10 +315,27 @@ public class NguyenVongBUS {
                         }
                         
                         nv.setKetQua(getCellValue(row.getCell(7)));
-                        nv.setPhuongThuc(getCellValue(row.getCell(9)));
+                        String phuongThuc = getCellValue(row.getCell(9));
+                        nv.setPhuongThuc(phuongThuc);
                         nv.setToHopMon(getCellValue(row.getCell(10)));
                         
-                        autoFill(nv); // Tạo keys: cccd|maNganh
+                        Nganh n = nganhMap.get(nv.getMaNganh());
+                        if (n != null) {
+                            if (("2".equals(phuongThuc) || "DGNL".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getDgnl())) {
+                                throw new Exception("Ngành không xét tuyển ĐGNL");
+                            }
+                            if (("3".equals(phuongThuc) || "VSAT".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getVsat())) {
+                                throw new Exception("Ngành không xét tuyển VSAT");
+                            }
+                            if (("4".equals(phuongThuc) || "THPT".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getThpt())) {
+                                throw new Exception("Ngành không xét tuyển THPT");
+                            }
+                            if (("1".equals(phuongThuc) || "TT".equalsIgnoreCase(phuongThuc) || "TUYENTHANG".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getTuyenThang())) {
+                                throw new Exception("Ngành không xét tuyển Tuyển thẳng");
+                            }
+                        }
+
+                        autoFill(nv);
                         
                         batch.add(nv);
                         totalProcessed++;

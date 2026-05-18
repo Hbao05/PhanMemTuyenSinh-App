@@ -25,7 +25,7 @@ public class NguyenVongDialog extends JDialog {
 
     private CustomTextField   txtCccd;
     private JLabel            lblHoTen;
-    private JComboBox<String> cboNganh, cboToHop, cboPhuongThuc;
+    private JComboBox<String> cboNganh;
     private JSpinner          spThuTu;
 
     private final ThiSinhBUS    thiSinhBUS    = new ThiSinhBUS();
@@ -84,21 +84,13 @@ public class NguyenVongDialog extends JDialog {
         cboNganh = new JComboBox<>();
         cboNganh.setFont(UIConstants.FONT_NORMAL);
         loadNganh();
-        cboNganh.addActionListener(e -> onNganhChanged());
 
-        cboToHop = new JComboBox<>();
-        cboToHop.setFont(UIConstants.FONT_NORMAL);
-
-        cboPhuongThuc = new JComboBox<>(new String[]{"THPT", "VSAT", "DGNL"});
-        cboPhuongThuc.setFont(UIConstants.FONT_NORMAL);
 
         Object[][] rows = {
             {"CCCD *",         pnlCccd},
             {"Họ tên TS",      lblHoTen},
             {"Thứ tự NV *",    spThuTu},
             {"Ngành *",        cboNganh},
-            {"Tổ hợp môn",     cboToHop},
-            {"Phương thức *",  cboPhuongThuc},
         };
 
         for (int i = 0; i < rows.length; i++) {
@@ -129,22 +121,6 @@ public class NguyenVongDialog extends JDialog {
         List<Nganh> list = nganhBUS.getAll();
         if (list != null)
             list.forEach(n -> cboNganh.addItem(n.getMaNganh() + " - " + n.getTenNganh()));
-        if (cboNganh.getItemCount() > 0) onNganhChanged();
-    }
-
-    private void onNganhChanged() {
-        if(cboToHop != null) {
-            cboToHop.removeAllItems();
-        } else {
-            cboToHop = new JComboBox<>();
-            cboToHop.setFont(UIConstants.FONT_NORMAL);
-        }
-        String sel = (String) cboNganh.getSelectedItem();
-        if (sel == null) return;
-        String maNganh = sel.split(" - ")[0].trim();
-        List<NganhToHop> list = nganhToHopBUS.getByMaNganh(maNganh);
-        if (list != null)
-            list.forEach(t -> cboToHop.addItem(t.getMaToHop()));
     }
 
     private void traCuuThiSinh() {
@@ -167,17 +143,6 @@ public class NguyenVongDialog extends JDialog {
         spThuTu.setValue(target.getThuTuNguyenVong() > 0 ? target.getThuTuNguyenVong() : 1);
 
         selectComboByPrefix(cboNganh, target.getMaNganh());
-        onNganhChanged(); // reload tổ hợp theo ngành đã chọn
-
-        if (target.getToHopMon() != null) {
-            for (int i = 0; i < cboToHop.getItemCount(); i++) {
-                if (target.getToHopMon().equals(cboToHop.getItemAt(i))) {
-                    cboToHop.setSelectedIndex(i); break;
-                }
-            }
-        }
-
-        if (target.getPhuongThuc() != null) cboPhuongThuc.setSelectedItem(target.getPhuongThuc());
     }
 
     private void selectComboByPrefix(JComboBox<String> cbo, String prefix) {
@@ -196,9 +161,6 @@ public class NguyenVongDialog extends JDialog {
 
         String nganhSel = (String) cboNganh.getSelectedItem();
         nv.setMaNganh(nganhSel != null ? nganhSel.split(" - ")[0].trim() : "");
-
-        nv.setToHopMon((String) cboToHop.getSelectedItem());
-        nv.setPhuongThuc((String) cboPhuongThuc.getSelectedItem());
 
         String result = target == null ? bus.addNguyenVong(nv) : bus.updateNguyenVong(nv);
         if (result.startsWith("Success")) {
