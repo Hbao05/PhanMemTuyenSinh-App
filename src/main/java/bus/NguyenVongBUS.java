@@ -318,22 +318,6 @@ public class NguyenVongBUS {
                         String phuongThuc = getCellValue(row.getCell(9));
                         nv.setPhuongThuc(phuongThuc);
                         nv.setToHopMon(getCellValue(row.getCell(10)));
-                        
-                        Nganh n = nganhMap.get(nv.getMaNganh());
-                        if (n != null) {
-                            if (("2".equals(phuongThuc) || "DGNL".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getDgnl())) {
-                                throw new Exception("Ngành không xét tuyển ĐGNL");
-                            }
-                            if (("3".equals(phuongThuc) || "VSAT".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getVsat())) {
-                                throw new Exception("Ngành không xét tuyển VSAT");
-                            }
-                            if (("4".equals(phuongThuc) || "THPT".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getThpt())) {
-                                throw new Exception("Ngành không xét tuyển THPT");
-                            }
-                            if (("1".equals(phuongThuc) || "TT".equalsIgnoreCase(phuongThuc) || "TUYENTHANG".equalsIgnoreCase(phuongThuc)) && !"Y".equalsIgnoreCase(n.getTuyenThang())) {
-                                throw new Exception("Ngành không xét tuyển Tuyển thẳng");
-                            }
-                        }
 
                         autoFill(nv);
                         

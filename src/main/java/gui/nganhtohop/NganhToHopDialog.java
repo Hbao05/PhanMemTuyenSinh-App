@@ -132,7 +132,14 @@ public class NganhToHopDialog extends JDialog {
     }
 
     private void fillForm() {
-        cbxNganh.setSelectedItem(item.getMaNganh());
+        // ComboBox chứa chuỗi "maNganh - tenNganh", dùng startsWith để tìm đúng item
+        String maNganhCanChon = item.getMaNganh();
+        for (int i = 0; i < cbxNganh.getItemCount(); i++) {
+            if (cbxNganh.getItemAt(i).startsWith(maNganhCanChon + " - ")) {
+                cbxNganh.setSelectedIndex(i);
+                break;
+            }
+        }
         cbxNganh.setEnabled(false); // Không cho sửa ngành/tổ hợp khi đang edit liên kết
         cbxToHop.setSelectedItem(item.getMaToHop());
         cbxToHop.setEnabled(false);
