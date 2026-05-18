@@ -21,7 +21,7 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
 
     private CustomTextField txtSearch;
     private CustomButton    btnSearch, btnReset;
-    private CustomButton    btnAdd, btnEdit, btnDelete;
+    private CustomButton    btnAdd, btnEdit, btnDelete, btnImport;
 
     private CustomTable       tblData;
     private DefaultTableModel tableModel;
@@ -92,7 +92,8 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
         btnAdd    = new CustomButton("+ Thêm",  UIConstants.SUCCESS_COLOR);
         btnEdit   = new CustomButton("Sửa",     UIConstants.PRIMARY_COLOR);
         btnDelete = new CustomButton("Xóa",     UIConstants.DANGER_COLOR);
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete}) {
+        btnImport = new CustomButton("Import",  UIConstants.TEAL_COLOR);
+        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnImport}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
         }
@@ -231,6 +232,9 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
                 }
             }
         });
+
+        // Import Excel
+        btnImport.addActionListener(e -> doImportExcel());
     }
 
     // ── SEARCH ───────────────────────────────────────────────────────────
@@ -290,5 +294,68 @@ public class QuanLyBangQuyDoiPanel extends JPanel {
 
     private Window getParentWindow() {
         return SwingUtilities.getWindowAncestor(this);
+    }
+
+    /** Import bảng quy đổi từ Excel */
+    private void doImportExcel() {
+        javax.swing.filechooser.FileNameExtensionFilter filter =
+                new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx");
+        javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+        fc.setFileFilter(filter);
+        fc.setDialogTitle("Chọn file Excel Bảng Quy Đổi");
+        if (fc.showOpenDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        java.io.File file = fc.getSelectedFile();
+
+        // Hỏi xóa dữ liệu cũ?
+        int opt = JOptionPane.showConfirmDialog(this,
+                "Bạn muốn XÓA tất cả dữ liệu cũ trước khi import?\n" +
+                "(Chọn Yes = xóa hết rồi import, No = thêm vào dữ liệu hiện có)",
+                "Xác nhận Import", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (opt == JOptionPane.CANCEL_OPTION) return;
+        boolean replaceAll = (opt == JOptionPane.YES_OPTION);
+
+        // Loading dialog
+        JDialog loading = new JDialog(getParentWindow(), "Đang import...", Dialog.ModalityType.APPLICATION_MODAL);
+        loading.setSize(350, 80);
+        loading.setLocationRelativeTo(this);
+        loading.setUndecorated(true);
+        JProgressBar pb = new JProgressBar();
+        pb.setIndeterminate(true);
+        pb.setStringPainted(true);
+        pb.setString("Đang đọc và import dữ liệu...");
+        pb.setFont(UIConstants.FONT_BOLD);
+        pb.setForeground(UIConstants.SUCCESS_COLOR);
+        JPanel pnlLoad = new JPanel(new BorderLayout());
+        pnlLoad.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIConstants.SUCCESS_COLOR, 2),
+                new EmptyBorder(20, 20, 20, 20)));
+        pnlLoad.add(pb);
+        loading.add(pnlLoad);
+
+        SwingWorker<String, Void> worker = new SwingWorker<>() {
+            @Override protected String doInBackground() {
+                return bus.importExcel(file, replaceAll);
+            }
+            @Override protected void done() {
+                loading.dispose();
+                try {
+                    String result = get();
+                    String msg = result.startsWith("Success") ? result.substring(8) : result;
+                    JOptionPane.showMessageDialog(QuanLyBangQuyDoiPanel.this, msg,
+                            result.startsWith("Success") ? "Kết quả Import" : "Lỗi",
+                            result.startsWith("Success") ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
+                    currentPage = 1;
+                    currentKeyword = "";
+                    txtSearch.setText("");
+                    loadData();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(QuanLyBangQuyDoiPanel.this,
+                            "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        worker.execute();
+        loading.setVisible(true);
     }
 }

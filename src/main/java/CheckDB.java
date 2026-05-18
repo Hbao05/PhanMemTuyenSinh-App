@@ -1,27 +1,23 @@
-import dao.NganhDAO;
-import dao.ToHopMonThiDAO;
-import entity.Nganh;
-import entity.ToHopMonThi;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 public class CheckDB {
     public static void main(String[] args) {
-        try {
-            NganhDAO nDao = new NganhDAO();
-            List<Nganh> nList = nDao.getAll();
-            System.out.println("Nganh in DB: " + (nList != null ? nList.size() : "null"));
-            if (nList != null && !nList.isEmpty()) {
-                System.out.println("First Nganh: " + nList.get(0).getMaNganh() + " - " + nList.get(0).getTenNganh());
-            }
-
-            ToHopMonThiDAO tDao = new ToHopMonThiDAO();
-            List<ToHopMonThi> tList = tDao.getAll();
-            System.out.println("ToHopMonThi in DB: " + (tList != null ? tList.size() : "null"));
-            if (tList != null && !tList.isEmpty()) {
-                System.out.println("First ToHop: " + tList.get(0).getMaToHop());
+        String url = "jdbc:mysql://localhost:3306/xettuyen2026?serverTimezone=UTC";
+        String user = "root";
+        String password = "root";
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             Statement stmt = conn.createStatement()) {
+             
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM xt_thisinhxettuyen25");
+            if (rs.next()) {
+                System.out.println("JDBC_COUNT: " + rs.getInt(1));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.exit(0);
     }
 }

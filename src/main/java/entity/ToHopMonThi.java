@@ -33,8 +33,7 @@ public class ToHopMonThi {
     private String tenToHop;
 
     // ── Quan hệ: ToHopMonThi 1-N NganhToHop (theo matohop) ──
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "matohop", referencedColumnName = "matohop", insertable = false, updatable = false)
+    @OneToMany(mappedBy = "toHopMonThi", fetch = FetchType.LAZY)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<NganhToHop> danhSachNganhToHop;

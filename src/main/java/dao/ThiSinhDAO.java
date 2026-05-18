@@ -119,6 +119,40 @@ public class ThiSinhDAO {
         }
     }
 
+    public boolean checkSbdExists(String sbd) {
+        if (sbd == null || sbd.trim().isEmpty()) return false;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT count(t) FROM ThiSinh t WHERE t.soBaoDanh = :sbd";
+            Query<Long> query = session.createQuery(hql, Long.class);
+            query.setParameter("sbd", sbd.trim());
+            return query.uniqueResult() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public Set<String> getAllSbd(){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            String hql = "SELECT t.soBaoDanh FROM ThiSinh t WHERE t.soBaoDanh IS NOT NULL AND t.soBaoDanh != ''";
+            List<String> list = session.createQuery(hql,String.class).list();
+            return new HashSet<>(list);
+        }catch (Exception e){
+            e.printStackTrace();
+            return new HashSet<>();
+        }
+    }
+
+    public ThiSinh getBySbd(String sbd) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("FROM ThiSinh t WHERE t.soBaoDanh = :sbd", ThiSinh.class)
+                    .setParameter("sbd", sbd).uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public ThiSinh getByCccd(String cccd) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
@@ -171,4 +205,32 @@ public class ThiSinhDAO {
         }
         return successCount;
     }
+
+    public List<Object[]> countByDoiTuong() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT t.doiTuong, COUNT(t) FROM ThiSinh t GROUP BY t.doiTuong";
+            return session.createQuery(hql, Object[].class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public List<Object[]> countByKhuVuc() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT t.khuVuc, COUNT(t) FROM ThiSinh t GROUP BY t.khuVuc";
+            return session.createQuery(hql, Object[].class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // ── LẤY TẤT CẢ (cho engine xét tuyển) ───────────────
+    public List<ThiSinh> getAll() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("FROM ThiSinh t", ThiSinh.class).list();
+        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+    }
 }
+

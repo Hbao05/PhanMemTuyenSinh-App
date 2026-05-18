@@ -22,10 +22,10 @@ public class ThemThiSinhDialog extends JDialog {
     private boolean isSaved = false;
 
     // Các Component nhập liệu
-    private CustomTextField txtCccd, txtHo, txtTen, txtNgaySinh;
-    private CustomTextField txtDienThoai, txtEmail, txtNoiSinh;
+    private CustomTextField txtCccd, txtSbd, txtHo, txtTen, txtNgaySinh;
+    private CustomTextField txtDienThoai, txtEmail;
     private CustomTextField txtDoiTuong, txtKhuVuc;
-    private CustomComboBox<String> cbxGioiTinh;
+    private CustomComboBox<String> cbxGioiTinh, cbxNoiSinh;
 
     public ThemThiSinhDialog(Window parent, ThiSinhBUS candidateBUS) {
         super(parent, "Thêm thí sinh mới", ModalityType.APPLICATION_MODAL);
@@ -48,14 +48,18 @@ public class ThemThiSinhDialog extends JDialog {
         lblTitle.setBorder(new EmptyBorder(15, 0, 10, 0));
         add(lblTitle, BorderLayout.NORTH);
 
-        // --- FORM NHẬP LIỆU (10 hàng x 2 cột) ---
-        JPanel pnlForm = new JPanel(new GridLayout(10, 2, 10, 12));
+        // --- FORM NHẬP LIỆU (11 hàng x 2 cột) ---
+        JPanel pnlForm = new JPanel(new GridLayout(11, 2, 10, 12));
         pnlForm.setOpaque(false);
         pnlForm.setBorder(new EmptyBorder(10, 30, 10, 30));
 
         pnlForm.add(createLabel("Số CCCD (*)"));
         txtCccd = new CustomTextField(20);
         pnlForm.add(txtCccd);
+
+        pnlForm.add(createLabel("Số báo danh"));
+        txtSbd = new CustomTextField(20);
+        pnlForm.add(txtSbd);
 
         pnlForm.add(createLabel("Họ"));
         txtHo = new CustomTextField(20);
@@ -70,12 +74,12 @@ public class ThemThiSinhDialog extends JDialog {
         pnlForm.add(txtNgaySinh);
 
         pnlForm.add(createLabel("Giới tính"));
-        cbxGioiTinh = new CustomComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
+        cbxGioiTinh = new CustomComboBox<>(new String[] { "Nam", "Nữ", "Khác" });
         pnlForm.add(cbxGioiTinh);
 
         pnlForm.add(createLabel("Nơi sinh"));
-        txtNoiSinh = new CustomTextField(20);
-        pnlForm.add(txtNoiSinh);
+        cbxNoiSinh = new CustomComboBox<>(util.ProvinceUtil.PROVINCES);
+        pnlForm.add(cbxNoiSinh);
 
         pnlForm.add(createLabel("Điện thoại"));
         txtDienThoai = new CustomTextField(20);
@@ -100,7 +104,7 @@ public class ThemThiSinhDialog extends JDialog {
         pnlButtons.setOpaque(false);
 
         CustomButton btnCancel = new CustomButton("Hủy bỏ", UIConstants.DANGER_COLOR);
-        CustomButton btnSave   = new CustomButton("Thêm mới", UIConstants.SUCCESS_COLOR);
+        CustomButton btnSave = new CustomButton("Thêm mới", UIConstants.SUCCESS_COLOR);
 
         btnCancel.addActionListener(e -> dispose());
         btnSave.addActionListener(e -> saveNewCandidate());
@@ -121,12 +125,16 @@ public class ThemThiSinhDialog extends JDialog {
         // Gom dữ liệu từ form
         ThiSinh ts = new ThiSinh();
         ts.setCccd(txtCccd.getText().trim());
+        ts.setSoBaoDanh(txtSbd.getText().trim());
         ts.setHo(txtHo.getText().trim());
         ts.setTen(txtTen.getText().trim());
         ts.setNgaySinh(txtNgaySinh.getText().trim());
         ts.setGioiTinh(cbxGioiTinh.getSelectedItem() != null
-                ? cbxGioiTinh.getSelectedItem().toString() : "Nam");
-        ts.setNoiSinh(txtNoiSinh.getText().trim());
+                ? cbxGioiTinh.getSelectedItem().toString()
+                : "Nam");
+        ts.setNoiSinh(cbxNoiSinh.getSelectedItem() != null
+                ? cbxNoiSinh.getSelectedItem().toString()
+                : "Hà Nội");
         ts.setDienThoai(txtDienThoai.getText().trim());
         ts.setEmail(txtEmail.getText().trim());
         ts.setDoiTuong(txtDoiTuong.getText().trim());

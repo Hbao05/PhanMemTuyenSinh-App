@@ -14,9 +14,11 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
 
 public class QuanLyNguyenVongPanel extends JPanel {
@@ -24,9 +26,10 @@ public class QuanLyNguyenVongPanel extends JPanel {
     private final NguyenVongBUS bus = new NguyenVongBUS();
 
     private CustomTextField   txtSearch;
-    private JComboBox<String> cboFilterNganh, cboFilterKetQua;
+    private JComboBox<ComboItem> cboFilterNganh;
+    private JComboBox<String> cboFilterKetQua;
     private CustomButton      btnSearch, btnReset;
-    private CustomButton      btnAdd, btnEdit, btnDelete, btnXetTuyen, btnXemKetQua;
+    private CustomButton      btnImport, btnAdd, btnEdit, btnDelete, btnXetTuyen, btnXemKetQua;
 
     private CustomTable       tblData;
     private DefaultTableModel tableModel;
@@ -77,9 +80,21 @@ public class QuanLyNguyenVongPanel extends JPanel {
         pnlFilter.setOpaque(false);
         pnlFilter.setBorder(new EmptyBorder(8, 15, 0, 15));
 
-        cboFilterNganh = new JComboBox<>(new String[]{"Tất cả ngành"});
+        cboFilterNganh = new JComboBox<>();
+        cboFilterNganh.addItem(new ComboItem("", "Tất cả ngành"));
+        try {
+            bus.NganhBUS nganhBUS = new bus.NganhBUS();
+            java.util.List<Nganh> listNganh = nganhBUS.getAll();
+            if (listNganh != null) {
+                for (Nganh n : listNganh) {
+                    cboFilterNganh.addItem(new ComboItem(n.getMaNganh(), n.getTenNganh()));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         cboFilterNganh.setFont(UIConstants.FONT_NORMAL);
-        cboFilterNganh.setPreferredSize(new Dimension(180, 34));
+        cboFilterNganh.setPreferredSize(new Dimension(250, 34));
 
         cboFilterKetQua = new JComboBox<>(new String[]{
             "Tất cả KQ",
@@ -119,12 +134,13 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
+        btnImport    = new CustomButton("Import",   UIConstants.TEAL_COLOR);
         btnAdd       = new CustomButton("+ Thêm",       UIConstants.SUCCESS_COLOR);
         btnEdit      = new CustomButton("Sửa",          UIConstants.PRIMARY_COLOR);
         btnDelete    = new CustomButton("Xóa",          UIConstants.DANGER_COLOR);
         btnXemKetQua = new CustomButton("Xem KQ",      new Color(124, 58, 237));
         btnXetTuyen  = new CustomButton("Chạy xét tuyển", new Color(5, 150, 105));
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete, btnXemKetQua}) {
+        for (CustomButton b : new CustomButton[]{btnImport, btnAdd, btnEdit, btnDelete, btnXemKetQua}) {
             b.setPreferredSize(new Dimension(110, 36));
             pnlActions.add(b);
         }
@@ -149,8 +165,8 @@ public class QuanLyNguyenVongPanel extends JPanel {
 
     // ── TABLE ────────────────────────────────────────────────────────────
     private void buildTable() {
-        String[] cols = {"ID","TT","CCCD","Họ tên","Mã ngành","Tên ngành",
-                         "Tổ hợp","PT","DTHGXT","DC","Ưu tiên","DXT","Kết quả"};
+        String[] cols = {"ID","TTNV","CCCD","Họ tên","Mã ngành","Tên ngành",
+                         "Tổ hợp","PT","DTHXT","ĐC","ĐƯT","ĐXT","Kết quả"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -220,6 +236,8 @@ public class QuanLyNguyenVongPanel extends JPanel {
             txtSearch.setText(""); currentKeyword = ""; currentPage = 1; loadData();
         });
 
+        btnImport.addActionListener(e -> doImportExcel());
+
         btnPrev.addActionListener(e -> { if (currentPage > 1)         { currentPage--; loadData(); } });
         btnNext.addActionListener(e -> { if (currentPage < totalPages) { currentPage++; loadData(); } });
 
@@ -261,8 +279,8 @@ public class QuanLyNguyenVongPanel extends JPanel {
     }
 
     private void applyFilter() {
-        String selNganh = (String) cboFilterNganh.getSelectedItem();
-        filterNganh = (selNganh == null || selNganh.startsWith("Tất cả")) ? "" : selNganh.split(" - ")[0].trim();
+        ComboItem selNganh = (ComboItem) cboFilterNganh.getSelectedItem();
+        filterNganh = (selNganh == null) ? "" : selNganh.getKey();
 
         String selKq = (String) cboFilterKetQua.getSelectedItem();
         filterKetQua = (selKq == null || selKq.startsWith("Tất cả")) ? "" : selKq;
@@ -285,6 +303,81 @@ public class QuanLyNguyenVongPanel extends JPanel {
         currentKeyword = txtSearch.getText().trim();
         currentPage    = 1;
         loadData();
+    }
+
+    private void doImportExcel() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Chọn file Excel nguyện vọng (.xlsx)");
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            
+            JDialog progressDialog = new JDialog(getParentWindow(), "Đang import...", Dialog.ModalityType.APPLICATION_MODAL);
+            progressDialog.setSize(400, 150);
+            progressDialog.setLocationRelativeTo(this);
+            progressDialog.setLayout(new BorderLayout(10, 10));
+            
+            JLabel lblStatus = new JLabel("Đang chuẩn bị đọc file...", SwingConstants.CENTER);
+            lblStatus.setFont(UIConstants.FONT_NORMAL);
+            lblStatus.setBorder(new EmptyBorder(10, 10, 0, 10));
+            
+            JProgressBar progressBar = new JProgressBar();
+            progressBar.setIndeterminate(true);
+            progressBar.setStringPainted(true);
+            progressBar.setString("Đang xử lý...");
+            
+            JPanel centerPanel = new JPanel(new BorderLayout());
+            centerPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
+            centerPanel.add(progressBar, BorderLayout.CENTER);
+            
+            progressDialog.add(lblStatus, BorderLayout.NORTH);
+            progressDialog.add(centerPanel, BorderLayout.CENTER);
+            
+            SwingWorker<Void, String> worker = new SwingWorker<>() {
+                private int finalSuccess = 0;
+                private int finalTotal = 0;
+                private String errorMessage = null;
+
+                @Override
+                protected Void doInBackground() {
+                    bus.importFromExcel(file, (processed, success, message) -> {
+                        finalTotal = processed;
+                        finalSuccess = success;
+                        if (message.startsWith("Lỗi")) {
+                            errorMessage = message;
+                        }
+                        publish("Đã đọc: " + processed + " | Thành công: " + success + " (" + message + ")");
+                    });
+                    return null;
+                }
+
+                @Override
+                protected void process(List<String> chunks) {
+                    if (!chunks.isEmpty()) {
+                        String latestMessage = chunks.get(chunks.size() - 1);
+                        lblStatus.setText(latestMessage);
+                        progressBar.setString(latestMessage);
+                    }
+                }
+
+                @Override
+                protected void done() {
+                    progressDialog.dispose();
+                    if (errorMessage != null) {
+                        JOptionPane.showMessageDialog(QuanLyNguyenVongPanel.this, errorMessage, "Lỗi Import", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(QuanLyNguyenVongPanel.this, 
+                            "Import thành công!\nTổng dòng đã đọc: " + finalTotal + "\nSố dòng thêm/cập nhật: " + finalSuccess, 
+                            "Hoàn thành", JOptionPane.INFORMATION_MESSAGE);
+                        currentPage = 1;
+                        loadData();
+                    }
+                }
+            };
+            
+            worker.execute();
+            progressDialog.setVisible(true); // Blocks until disposed
+        }
     }
 
     // ── LOAD DATA ────────────────────────────────────────────────────────
@@ -346,4 +439,17 @@ public class QuanLyNguyenVongPanel extends JPanel {
     private Window getParentWindow() { return SwingUtilities.getWindowAncestor(this); }
     private String s(String v)  { return v != null ? v : ""; }
     private String f(Double v)  { return v != null ? String.format("%.2f", v) : "-"; }
+
+    static class ComboItem {
+        private String key;
+        private String value;
+        public ComboItem(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+        public String getKey() { return key; }
+        public String getValue() { return value; }
+        @Override
+        public String toString() { return value; }
+    }
 }

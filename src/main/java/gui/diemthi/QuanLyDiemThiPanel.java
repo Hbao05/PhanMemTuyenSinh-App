@@ -6,6 +6,7 @@ import gui.component.CustomButton;
 import gui.component.CustomTable;
 import gui.component.CustomTextField;
 import gui.style.UIConstants;
+import util.ExcelUtil;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -13,7 +14,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
+import java.util.Comparator;
 
 public class QuanLyDiemThiPanel extends JPanel {
 
@@ -22,7 +25,7 @@ public class QuanLyDiemThiPanel extends JPanel {
     private CustomTextField   txtSearch;
     private JComboBox<String> cboFilter;
     private CustomButton      btnSearch, btnReset, btnThongKe;
-    private CustomButton      btnAdd, btnEdit, btnDelete;
+    private CustomButton      btnAdd, btnEdit, btnDelete, btnImport;
 
     private CustomTable       tblData;
     private DefaultTableModel tableModel;
@@ -41,13 +44,13 @@ public class QuanLyDiemThiPanel extends JPanel {
         setOpaque(true);
 
         buildNorthArea();
-        buildTableForFilter("");
+        buildTableForAll(); // Luôn cố định cấu trúc full cột để tránh lỗi co nhỏ UI
         buildFooter();
         setupEvents();
         loadData();
     }
 
-    // ── HEADER + TOOLBAR ────────────────────────────────────────────────
+    // ── HEADER + TOOLBAR (Đã sửa lỗi đè nút) ───────────────────────────
     private void buildNorthArea() {
         JPanel pnlNorth = new JPanel(new BorderLayout());
         pnlNorth.setOpaque(false);
@@ -71,43 +74,49 @@ public class QuanLyDiemThiPanel extends JPanel {
         pnlToolbar.setOpaque(false);
         pnlToolbar.setBorder(new EmptyBorder(10, 15, 8, 15));
 
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        // Cụm tìm kiếm bên trái - Thu gọn kích thước vừa đủ
+        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         pnlSearch.setOpaque(false);
 
-        JLabel lblFilter = new JLabel("Loai:");
+        JLabel lblFilter = new JLabel("Loại:");
         lblFilter.setFont(UIConstants.FONT_BOLD);
         cboFilter = new JComboBox<>(new String[]{"Tất cả", "THPT", "VSAT", "DGNL"});
         cboFilter.setFont(UIConstants.FONT_NORMAL);
-        cboFilter.setPreferredSize(new Dimension(100, 36));
+        cboFilter.setPreferredSize(new Dimension(90, 36));
 
-        JLabel lblSearch = new JLabel("Tìm kiếm:");
+        JLabel lblSearch = new JLabel("Tìm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
-        txtSearch = new CustomTextField(18);
-        txtSearch.setPreferredSize(new Dimension(200, 36));
+        txtSearch = new CustomTextField(15);
+        txtSearch.setPreferredSize(new Dimension(160, 36));
         txtSearch.setToolTipText("Nhập CCCD hoặc số báo danh");
-        btnSearch   = new CustomButton("Tìm",      UIConstants.PRIMARY_COLOR);
-        btnReset    = new CustomButton("Xóa lọc",  UIConstants.GRAY_COLOR);
-        btnThongKe  = new CustomButton("Thống kê", new Color(124, 58, 237));
-        btnSearch.setPreferredSize(new Dimension(80, 36));
-        btnReset.setPreferredSize(new Dimension(100, 36));
-        btnThongKe.setPreferredSize(new Dimension(110, 36));
+
+        btnSearch = new CustomButton("Tìm", UIConstants.PRIMARY_COLOR);
+        btnReset  = new CustomButton("Xóa lọc", UIConstants.GRAY_COLOR);
+        btnSearch.setPreferredSize(new Dimension(75, 36));
+        btnReset.setPreferredSize(new Dimension(90, 36));
 
         pnlSearch.add(lblFilter); pnlSearch.add(cboFilter);
-        pnlSearch.add(Box.createHorizontalStrut(6));
+        pnlSearch.add(Box.createHorizontalStrut(4));
         pnlSearch.add(lblSearch); pnlSearch.add(txtSearch);
         pnlSearch.add(btnSearch); pnlSearch.add(btnReset);
-        pnlSearch.add(Box.createHorizontalStrut(10));
-        pnlSearch.add(btnThongKe);
 
+        // Cụm hành động bên phải - Đưa nút Thống Kê về đây để dàn đều UI
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         pnlActions.setOpaque(false);
-        btnAdd    = new CustomButton("+ Thêm", UIConstants.SUCCESS_COLOR);
-        btnEdit   = new CustomButton("Sửa",    UIConstants.PRIMARY_COLOR);
-        btnDelete = new CustomButton("Xóa",    UIConstants.DANGER_COLOR);
-        for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnDelete}) {
-            b.setPreferredSize(new Dimension(110, 36));
+
+        btnThongKe = new CustomButton("Thống kê", new Color(124, 58, 237));
+        btnAdd     = new CustomButton("+ Thêm", UIConstants.SUCCESS_COLOR);
+        btnEdit    = new CustomButton("Sửa",    UIConstants.PRIMARY_COLOR);
+        btnDelete  = new CustomButton("Xóa",    UIConstants.DANGER_COLOR);
+        btnImport  = new CustomButton("Import", new Color(14, 165, 233));
+
+        // Đặt kích thước vừa vặn cho các nút hành động (Kích thước 100 giúp không bị tràn)
+        for (CustomButton b : new CustomButton[]{btnThongKe, btnAdd, btnEdit, btnDelete}) {
+            b.setPreferredSize(new Dimension(100, 36));
             pnlActions.add(b);
         }
+        btnImport.setPreferredSize(new Dimension(100, 36));
+        pnlActions.add(btnImport);
 
         pnlToolbar.add(pnlSearch,  BorderLayout.WEST);
         pnlToolbar.add(pnlActions, BorderLayout.EAST);
@@ -124,22 +133,28 @@ public class QuanLyDiemThiPanel extends JPanel {
         add(pnlNorth, BorderLayout.NORTH);
     }
 
-    // ── TABLE (xây lại theo filter) ──────────────────────────────────────
-    private void buildTableForFilter(String filter) {
-        String[] cols;
-        int[]    widths;
+    // ── CỐ ĐỊNH BẢNG FULL CỘT (Hiện đủ NK1 -> NK10, Thứ tự THPT -> ĐGNL -> VSAT) ──
+    private void buildTableForAll() {
+        // Thứ tự sắp xếp các cột: Thông tin chung -> Điểm THPT -> Điểm Năng Khiếu (1-10) -> Điểm ĐGNL -> Điểm VSAT
+        String[] cols = {
+                // [0-3] Thông tin chung
+                "ID", "CCCD", "SBD", "Loại",
+                // [4-15] Điểm THPT / VSAT (cùng cột DB)
+                "Toán", "Lý", "Hóa", "Sinh", "Văn", "Sử", "Địa", "GDCD",
+                "N1_Thi", "N1_CC", "TI", "KTPL",
+                // [16-25] Năng khiếu NK1-NK10
+                "NK1","NK2","NK3","NK4","NK5","NK6","NK7","NK8","NK9","NK10",
+                // [26-28] ĐGNL riêng
+                "NL1", "CNCN", "CNNN"
+        };
 
-        if ("DGNL".equals(filter)) {
-            cols   = new String[]{"ID","CCCD","Loai","NL1","NK1","NK2","CNCN","CNNN","KTPL"};
-            widths = new int[]{45,130,60,65,65,65,65,65,65};
-        } else if ("VSAT".equals(filter)) {
-            cols   = new String[]{"ID","CCCD","SBD","Loai","Toan","Ly","Hoa","Sinh","Van","Su","Dia","T.Anh"};
-            widths = new int[]{45,130,90,55,55,55,55,55,55,55,55,55};
-        } else {
-            // THPT hoặc Tất cả
-            cols   = new String[]{"ID","CCCD","SBD","Loai","Toan","Ly","Hoa","Sinh","Van","Su","Dia","T.Anh"};
-            widths = new int[]{45,130,90,55,55,55,55,55,55,55,55,55};
-        }
+        // Đặt độ rộng hiển thị mặc định cho từng cột để cuộn ngang đẹp mắt
+        int[] widths = new int[cols.length];
+        widths[0] = 50;   // ID
+        widths[1] = 130;  // CCCD
+        widths[2] = 80;   // SBD
+        widths[3] = 60;   // Loại
+        for (int i = 4; i < cols.length; i++) widths[i] = 65;
 
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -149,35 +164,34 @@ public class QuanLyDiemThiPanel extends JPanel {
             }
         };
 
-        if (tblData == null) {
-            tblData = new CustomTable(tableModel);
-            tblData.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            tblData.setRowHeight(28);
+        tblData = new CustomTable(tableModel);
+        tblData.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblData.setRowHeight(28);
+        tblData.setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // BẮT BUỘC để kích hoạt thanh cuộn ngang độc lập
 
-            JScrollPane scroll = new JScrollPane(tblData);
-            scroll.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_COLOR));
-            scroll.getViewport().setBackground(Color.WHITE);
+        JScrollPane scroll = new JScrollPane(tblData,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_COLOR));
+        scroll.getViewport().setBackground(Color.WHITE);
 
-            JPanel pnlCenter = new JPanel(new BorderLayout());
-            pnlCenter.setOpaque(false);
-            pnlCenter.setBorder(new EmptyBorder(0, 15, 0, 15));
-            pnlCenter.add(scroll, BorderLayout.CENTER);
-            add(pnlCenter, BorderLayout.CENTER);
+        JPanel pnlCenter = new JPanel(new BorderLayout());
+        pnlCenter.setOpaque(false);
+        pnlCenter.setBorder(new EmptyBorder(0, 15, 0, 15));
+        pnlCenter.add(scroll, BorderLayout.CENTER);
+        add(pnlCenter, BorderLayout.CENTER);
 
-            // Double-click = sửa
-            tblData.addMouseListener(new java.awt.event.MouseAdapter() {
-                @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                    if (e.getClickCount() == 2) openEdit();
-                }
-            });
-        } else {
-            tblData.setModel(tableModel);
-        }
+        tblData.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) openEdit();
+            }
+        });
 
-        for (int i = 0; i < widths.length; i++)
+        // Áp cấu hình độ rộng cột
+        for (int i = 0; i < widths.length && i < tblData.getColumnCount(); i++)
             tblData.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
-        // Căn giữa cột ID và điểm
+        // Căn giữa toàn bộ các cột dữ liệu số và loại điểm
         for (int c = 0; c < cols.length; c++) {
             if (c == 0 || c >= 3)
                 tblData.getColumnModel().getColumn(c).setCellRenderer(CustomTable.centerRenderer());
@@ -211,8 +225,12 @@ public class QuanLyDiemThiPanel extends JPanel {
     private void setupEvents() {
         cboFilter.addActionListener(e -> {
             String sel = (String) cboFilter.getSelectedItem();
-            currentFilter = "Tất cả".equals(sel) ? "" : sel;
-            buildTableForFilter(currentFilter);
+            currentFilter = switch (sel) {
+                case "THPT" -> "4";
+                case "VSAT" -> "3";
+                case "DGNL" -> "2";
+                default     -> "";   // "Tất cả"
+            };
             currentPage    = 1;
             currentKeyword = "";
             txtSearch.setText("");
@@ -260,6 +278,7 @@ public class QuanLyDiemThiPanel extends JPanel {
             ThongKeDiemDialog dlg = new ThongKeDiemDialog(getParentWindow(), bus);
             dlg.setVisible(true);
         });
+        btnImport.addActionListener(e -> doImport());
     }
 
     private void openEdit() {
@@ -276,7 +295,70 @@ public class QuanLyDiemThiPanel extends JPanel {
         loadData();
     }
 
-    // ── LOAD DATA ────────────────────────────────────────────────────────
+    private void doImport() {
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Chọn file Excel điểm thi (đã join)");
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Excel files (*.xlsx)", "xlsx"));
+
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+        File file = fc.getSelectedFile();
+        try {
+            // Hiện cursor chờ khi đọc file lớn
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            List<DiemThiXetTuyen> list = ExcelUtil.readDiemThiExcel(file);
+            setCursor(Cursor.getDefaultCursor());
+
+            if (list.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "File không có dữ liệu hoặc sai định dạng!\n" +
+                                "Yêu cầu: dòng đầu là header, có cột CCCD và D_PHUONGTHUC.",
+                        "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Đếm theo phương thức để hiện xác nhận rõ ràng
+            long soThpt = list.stream().filter(d -> "4".equals(d.getPhuongThuc())).count();
+            long soDgnl = list.stream().filter(d -> "2".equals(d.getPhuongThuc())).count();
+            long soVsat = list.stream().filter(d -> "3".equals(d.getPhuongThuc())).count();
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    String.format("Tìm thấy %d dòng:\n" +
+                                    "  THPT (4): %d dòng\n" +
+                                    "  ĐGNL (2): %d dòng\n" +
+                                    "  VSAT (3): %d dòng\n\n" +
+                                    "Tiến hành import?",
+                            list.size(), soThpt, soDgnl, soVsat),
+                    "Xác nhận import", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+
+            // Thực hiện import
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            String result = bus.importDiemThi(list);
+            setCursor(Cursor.getDefaultCursor());
+
+            JOptionPane.showMessageDialog(this,
+                    result, "Kết quả import", JOptionPane.INFORMATION_MESSAGE);
+
+            // Reload lại danh sách
+            currentPage = 1;
+            loadData();
+
+        } catch (IllegalArgumentException ex) {
+            setCursor(Cursor.getDefaultCursor());
+            JOptionPane.showMessageDialog(this,
+                    "File sai định dạng:\n" + ex.getMessage(),
+                    "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            setCursor(Cursor.getDefaultCursor());
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi khi đọc file:\n" + ex.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // ── LOAD DATA (Đã thêm logic Sort Ưu tiên THPT -> ĐGNL -> VSAT) ──
     private void loadData() {
         tableModel.setRowCount(0);
 
@@ -296,22 +378,96 @@ public class QuanLyDiemThiPanel extends JPanel {
         btnNext.setEnabled(currentPage < totalPages);
 
         if (list == null) return;
-        for (DiemThiXetTuyen dt : list) {
-            String pt = dt.getPhuongThuc() != null ? dt.getPhuongThuc() : "";
-            if ("DGNL".equals(currentFilter)) {
-                tableModel.addRow(new Object[]{
-                    dt.getIdDiemThi(), s(dt.getCccd()), pt,
-                    f(dt.getNl1()), f(dt.getNk1()), f(dt.getNk2()),
-                    f(dt.getCncn()), f(dt.getCnnn()), f(dt.getDiemKtpl())
-                });
-            } else {
-                tableModel.addRow(new Object[]{
-                    dt.getIdDiemThi(), s(dt.getCccd()), s(dt.getSoBaoDanh()), pt,
-                    f(dt.getDiemToan()), f(dt.getDiemLy()),  f(dt.getDiemHoa()),
-                    f(dt.getDiemSinh()), f(dt.getDiemVan()), f(dt.getDiemSu()),
-                    f(dt.getDiemDia()), f(dt.getDiemTiengAnh())
-                });
+
+        // Tiến hành Sort dữ liệu hiển thị theo thứ tự mong muốn: THPT (4) -> ĐGNL (2) -> VSAT (3)
+        list.sort((a, b) -> {
+            String ptA = a.getPhuongThuc() != null ? a.getPhuongThuc() : "";
+            String ptB = b.getPhuongThuc() != null ? b.getPhuongThuc() : "";
+
+            if (!ptA.equals(ptB)) {
+                int weightA = "4".equals(ptA) ? 1 : ("2".equals(ptA) ? 2 : 3);
+                int weightB = "4".equals(ptB) ? 1 : ("2".equals(ptB) ? 2 : 3);
+                if (weightA != weightB) {
+                    return Integer.compare(weightA, weightB);
+                }
             }
+            // SỬA TẠI ĐÂY: Đổi so sánh (b, a) thành (a, b) để ID chạy tăng dần từ 1, 2, 3... giống dưới Database
+            return Integer.compare(a.getIdDiemThi(), b.getIdDiemThi());
+        });
+
+        // Đổ dữ liệu vào hàng theo cấu trúc full cột cố định
+        for (DiemThiXetTuyen dt : list) {
+            String ptRow = dt.getPhuongThuc() != null ? dt.getPhuongThuc() : "";
+            Object[] r = new Object[tableModel.getColumnCount()];
+
+            // [0-3] Thông tin chung — luôn set
+            r[0] = dt.getIdDiemThi();
+            r[1] = s(dt.getCccd());
+            r[2] = s(dt.getSoBaoDanh());
+            r[3] = tenPhuongThuc(dt.getPhuongThuc());
+
+            // Mặc định tất cả cột điểm là "-"
+            for (int i = 4; i < r.length; i++) r[i] = "-";
+
+            if ("4".equals(ptRow)) {
+                // ── THPT ──
+                // [4-15] điểm môn
+                r[4]  = f(dt.getDiemToan());
+                r[5]  = f(dt.getDiemLy());
+                r[6]  = f(dt.getDiemHoa());
+                r[7]  = f(dt.getDiemSinh());
+                r[8]  = f(dt.getDiemVan());
+                r[9]  = f(dt.getDiemSu());
+                r[10] = f(dt.getDiemDia());
+                r[11] = f(dt.getDiemGdcd());
+                r[12] = f(dt.getN1Thi());
+                r[13] = f(dt.getN1Cc());
+                r[14] = f(dt.getDiemTiengAnh()); // TI
+                r[15] = f(dt.getDiemKtpl());     // KTPL
+                // [16-25] NK
+                r[16] = f(dt.getNk1());  r[17] = f(dt.getNk2());
+                r[18] = f(dt.getNk3());  r[19] = f(dt.getNk4());
+                r[20] = f(dt.getNk5());  r[21] = f(dt.getNk6());
+                r[22] = f(dt.getNk7());  r[23] = f(dt.getNk8());
+                r[24] = f(dt.getNk9());  r[25] = f(dt.getNk10());
+                // [26-28] ĐGNL → "-" (đã set mặc định)
+
+            } else if ("3".equals(ptRow)) {
+                // ── VSAT ── dùng cùng cột DB với THPT
+                r[4]  = f(dt.getDiemToan());
+                r[5]  = f(dt.getDiemLy());
+                r[6]  = f(dt.getDiemHoa());
+                r[7]  = f(dt.getDiemSinh());
+                r[8]  = f(dt.getDiemVan());
+                r[9]  = f(dt.getDiemSu());
+                r[10] = f(dt.getDiemDia());
+                r[11] = "-";               // GDCD: VSAT không có
+                r[12] = f(dt.getN1Thi()); // N1_THI: điểm thi ngoại ngữ
+                r[13] = "-";               // N1_CC: không áp dụng
+                r[14] = "-";               // TI: không áp dụng
+                r[15] = "-";               // KTPL: không áp dụng
+                // [16-28] NK + ĐGNL → "-"
+
+            } else if ("2".equals(ptRow)) {
+                // ── ĐGNL ──
+                // [4-15] THPT → "-" (đã set mặc định)
+                // [16-21] NK1-NK6: ĐGNL có thể có năng khiếu
+                r[16] = f(dt.getNk1());  r[17] = f(dt.getNk2());
+                r[18] = f(dt.getNk3());  r[19] = f(dt.getNk4());
+                r[20] = f(dt.getNk5());  r[21] = f(dt.getNk6());
+                r[22] = f(dt.getNk7());  r[23] = f(dt.getNk8());
+                r[24] = f(dt.getNk9());  r[25] = f(dt.getNk10());
+                // [22-25] NK7-NK10 → "-"
+                // [26-28] ĐGNL riêng
+                r[26] = f(dt.getNl1());
+                r[27] = f(dt.getCncn());
+                r[28] = f(dt.getCnnn());
+                // KTPL và TI của ĐGNL nằm ở cột chung [14] và [15]
+                r[14] = f(dt.getDiemTiengAnh()); // TI
+                r[15] = f(dt.getDiemKtpl());     // KTPL
+            }
+
+            tableModel.addRow(r);
         }
     }
 
@@ -319,8 +475,7 @@ public class QuanLyDiemThiPanel extends JPanel {
     private DiemThiXetTuyen getSelected() {
         int row = tblData.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản ghi!", "Chưa chọn",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản ghi!", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
             return null;
         }
         int id = (int) tblData.getValueAt(row, 0);
@@ -330,4 +485,13 @@ public class QuanLyDiemThiPanel extends JPanel {
     private Window getParentWindow() { return SwingUtilities.getWindowAncestor(this); }
     private String s(String v)  { return v != null ? v : ""; }
     private String f(Double v)  { return v != null ? String.format("%.2f", v) : "-"; }
+
+    private String tenPhuongThuc(String ma) {
+        return switch (ma != null ? ma : "") {
+            case "2" -> "ĐGNL";
+            case "3" -> "VSAT";
+            case "4" -> "THPT";
+            default  -> ma != null ? ma : "";
+        };
+    }
 }

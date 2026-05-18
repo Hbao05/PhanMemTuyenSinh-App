@@ -10,7 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="xt_thisinhxettuyen25")
+@Table(name = "xt_thisinhxettuyen25")
 public class ThiSinh {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,10 +56,11 @@ public class ThiSinh {
     @Column(name = "khu_vuc")
     private String khuVuc;
 
-    @PrePersist
-    private void prePersist() {
-        updatedAt = LocalDate.now();
-    }
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cccd", referencedColumnName = "cccd", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<DiemThiXetTuyen> diemThi;
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd", insertable = false, updatable = false)

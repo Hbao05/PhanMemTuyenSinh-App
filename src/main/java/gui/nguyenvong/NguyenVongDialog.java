@@ -133,7 +133,12 @@ public class NguyenVongDialog extends JDialog {
     }
 
     private void onNganhChanged() {
-        cboToHop.removeAllItems();
+        if(cboToHop != null) {
+            cboToHop.removeAllItems();
+        } else {
+            cboToHop = new JComboBox<>();
+            cboToHop.setFont(UIConstants.FONT_NORMAL);
+        }
         String sel = (String) cboNganh.getSelectedItem();
         if (sel == null) return;
         String maNganh = sel.split(" - ")[0].trim();

@@ -192,8 +192,54 @@ public class DiemCongDAO {
             if (tx != null && tx.isActive()) {
                 try { tx.rollback(); } catch (Exception ex) { ex.printStackTrace(); }
             }
-            e.printStackTrace();
-            return 0;
+            System.err.println("Lỗi batch insert Điểm Cộng. Chuyển sang insert từng dòng (fallback)...");
+            return fallbackSingleInsert(list);
         }
+    }
+
+    private int fallbackSingleInsert(List<DiemCongXetTuyen> list) {
+        int successCount = 0;
+        for (DiemCongXetTuyen dc : list) {
+            Transaction tx = null;
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                tx = session.beginTransaction();
+                session.doWork(new Work() {
+                    @Override
+                    public void execute(Connection connection) throws SQLException {
+                        String sql = "INSERT INTO xt_diemcongxetuyen (ts_cccd, manganh, matohop, phuongthuc, diemCC, diemUtxt, diemTong, dc_keys) " +
+                                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+                                     "ON DUPLICATE KEY UPDATE diemCC=VALUES(diemCC), diemUtxt=VALUES(diemUtxt), diemTong=VALUES(diemTong)";
+                        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                            pstmt.setString(1, dc.getCccd());
+                            pstmt.setString(2, dc.getMaNganh());
+                            pstmt.setString(3, dc.getMaToHop());
+                            pstmt.setString(4, dc.getPhuongThuc());
+                            if (dc.getDiemCc() != null) pstmt.setDouble(5, dc.getDiemCc());
+                            else pstmt.setNull(5, java.sql.Types.DOUBLE);
+                            if (dc.getDiemUtXt() != null) pstmt.setDouble(6, dc.getDiemUtXt());
+                            else pstmt.setNull(6, java.sql.Types.DOUBLE);
+                            if (dc.getDiemTong() != null) pstmt.setDouble(7, dc.getDiemTong());
+                            else pstmt.setNull(7, java.sql.Types.DOUBLE);
+                            pstmt.setString(8, dc.getDcKeys());
+                            pstmt.executeUpdate();
+                        }
+                    }
+                });
+                tx.commit();
+                successCount++;
+            } catch (Exception e) {
+                if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ex) {}
+                System.err.println("Bỏ qua dòng lỗi (CCCD: " + dc.getCccd() + ", Ngành: " + dc.getMaNganh() + ")");
+            }
+        }
+        return successCount;
+    }
+
+    // ── LẤY TẤT CẢ (cho engine xét tuyển) ───────────────
+    public List<DiemCongXetTuyen> getAll() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "FROM DiemCongXetTuyen d ORDER BY d.cccd", DiemCongXetTuyen.class).list();
+        } catch (Exception e) { e.printStackTrace(); return List.of(); }
     }
 }

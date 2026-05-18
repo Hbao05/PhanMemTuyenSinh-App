@@ -126,8 +126,7 @@ public class DiemCongBUS {
 
         // dcKeys = cccd|maNganh|maToHop|phuongThuc
         String toHop = dc.getMaToHop()    != null ? dc.getMaToHop()    : "";
-        String pt    = dc.getPhuongThuc() != null ? dc.getPhuongThuc() : "";
-        dc.setDcKeys(dc.getCccd() + "|" + dc.getMaNganh() + "|" + toHop + "|" + pt);
+        dc.setDcKeys(dc.getCccd() + "_" + dc.getMaNganh() + "_" + toHop);
     }
 
     // ── IMPORT EXCEL ─────────────────────────────────────
@@ -146,9 +145,21 @@ public class DiemCongBUS {
                      .rowCacheSize(100)
                      .bufferSize(4096)
                      .open(is)) {
-            
+            boolean cancelled = false;
             for (Sheet sheet : workbook) {
                 for (Row row : sheet) {
+                    if (Thread.currentThread().isInterrupted()) {
+
+                        cancelled = true;
+
+                        if (!batch.isEmpty()) {
+                            int success = dao.batchInsert(batch);
+                            totalSuccess += success;
+                            batch.clear();
+                        }
+
+                        break;
+                    }
                     if (row.getRowNum() == 0) continue; // Skip header
 
                     try {
@@ -177,7 +188,7 @@ public class DiemCongBUS {
                             dc.setDiemTong(Double.parseDouble(diemTongStr));
                         }
                         
-                        autoFill(dc); // Generate keys & calculate max totals
+                        autoFill(dc);
                         
                         batch.add(dc);
                         totalProcessed++;
@@ -194,20 +205,30 @@ public class DiemCongBUS {
                         System.err.println("Lỗi dòng " + row.getRowNum() + ": " + ex.getMessage());
                     }
                 }
-            }
-            
-            if (!batch.isEmpty()) {
-                int success = dao.batchInsert(batch);
-                totalSuccess += success;
-                if (callback != null) {
-                    callback.onProgress(totalProcessed, totalSuccess, "Đang xử lý...");
+                if (cancelled) {
+                    break;
                 }
             }
-            
+
+            if (!cancelled && !batch.isEmpty()) {
+
+                int success = dao.batchInsert(batch);
+
+                totalSuccess += success;
+
+                if (callback != null) {
+                    callback.onProgress(
+                            totalProcessed,
+                            totalSuccess,
+                            "Đang xử lý..."
+                    );
+                }
+            }
+
             if (callback != null) {
                 callback.onProgress(totalProcessed, totalSuccess, "Hoàn thành!");
             }
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             if (callback != null) {
