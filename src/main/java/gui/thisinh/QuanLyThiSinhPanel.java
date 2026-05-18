@@ -609,7 +609,7 @@ public class QuanLyThiSinhPanel extends JPanel {
         if (statDT != null) {
             for (Object[] row : statDT) {
                 String name = "Không có";
-                if (row[0] != null) {
+                if (row[0] != null && !row[0].toString().trim().isEmpty()) {
                     name = row[0].toString();
                 }
                 txtDoiTuong.append("  - Đối tượng " + name + ": " + row[1] + " thí sinh\n");
@@ -629,7 +629,7 @@ public class QuanLyThiSinhPanel extends JPanel {
         if (statKV != null) {
             for (Object[] row : statKV) {
                 String name = "Không có";
-                if (row[0] != null) {
+                if (row[0] != null && !row[0].toString().trim().isEmpty()) {
                     name = row[0].toString();
                 }
                 txtKhuVuc.append("  - Khu vực " + name + ": " + row[1] + " thí sinh\n");
