@@ -173,15 +173,15 @@ public class QuanLyNganhPanel extends JPanel {
             tblNganh.getColumnModel().getColumn(c).setCellRenderer(CustomTable.centerRenderer());
         }
 
-        // Renderer đặc biệt: Y -> "Có" (xanh), null/khác -> "-" (xám)
+        // Renderer đặc biệt: Y -> "Có" (xanh), null/N/khác -> "Không" (đỏ nhạt)
         CustomTable.ZebraRenderer flagRend = new CustomTable.ZebraRenderer(SwingConstants.CENTER) {
             @Override
             public Component getTableCellRendererComponent(
                     JTable table, Object value, boolean isSelected,
                     boolean hasFocus, int row, int col) {
                 boolean isY = "Y".equalsIgnoreCase(String.valueOf(value));
-                super.getTableCellRendererComponent(table, isY ? "Có" : "-", isSelected, hasFocus, row, col);
-                if (!isSelected) setForeground(isY ? UIConstants.SUCCESS_COLOR : new Color(180, 180, 180));
+                super.getTableCellRendererComponent(table, isY ? "Có" : "Không", isSelected, hasFocus, row, col);
+                if (!isSelected) setForeground(isY ? UIConstants.SUCCESS_COLOR : new Color(210, 80, 80));
                 return this;
             }
         };
