@@ -2,6 +2,7 @@ package gui.nganh;
 
 import bus.NganhBUS;
 import bus.ToHopMonThiBUS;
+import dao.NganhToHopDAO;
 import entity.Nganh;
 import entity.ToHopMonThi;
 import gui.component.CustomButton;
@@ -12,6 +13,7 @@ import gui.style.UIConstants;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.List;
 
 /**
  * Dialog dùng chung cho cả Thêm mới và Sửa ngành.
@@ -148,10 +150,23 @@ public class NganhDialog extends JDialog {
     // ──────────────────────────────────────────────────────
     private void fillForm() {
         txtMaNganh.setText(nganh.getMaNganh());
-        // Cho phép sửa mã ngành (BUS sẽ check trùng)
 
+        // Kiểm tra ngành có liên kết với tổ hợp không
+        NganhToHopDAO nthDAO = new NganhToHopDAO();
+        List<entity.NganhToHop> lienKet = nthDAO.getByMaNganh(nganh.getMaNganh());
+        if (lienKet != null && !lienKet.isEmpty()) {
+            // Khóa mã ngành vì đang có liên kết với tổ hợp
+            txtMaNganh.setEnabled(false);
+            txtMaNganh.setToolTipText(
+                "Không thể sửa mã ngành vì ngành này đang liên kết với "
+                + lienKet.size() + " tổ hợp. Hãy xóa các liên kết Ngành-Tổ hợp trước.");
+        }
+
+        // Chọn đúng To Hợp Gốc nếu có dữ liệu, nếu không giữ nguyên mặc định (item đầu tiên)
+        if (nganh.getToHopGoc() != null && !nganh.getToHopGoc().trim().isEmpty()) {
+            cbxToHopGoc.setSelectedItem(nganh.getToHopGoc().trim());
+        }
         txtTenNganh.setText(nganh.getTenNganh());
-        cbxToHopGoc.setSelectedItem(nganh.getToHopGoc());
         txtChiTieu.setText(String.valueOf(nganh.getChiTieu()));
         txtDiemSan.setText(nganh.getDiemSan() != null ? String.valueOf(nganh.getDiemSan()) : "");
 
@@ -214,11 +229,16 @@ public class NganhDialog extends JDialog {
     private void loadToHopGocData() {
         ToHopMonThiBUS thBus = new ToHopMonThiBUS();
         java.util.List<ToHopMonThi> list = thBus.getAll();
-        cbxToHopGoc.addItem(""); // Option cho phép trống
-        if (list != null) {
+        if (list != null && !list.isEmpty()) {
             for (ToHopMonThi t : list) {
                 cbxToHopGoc.addItem(t.getMaToHop());
             }
+            // Mặc định chọn phần tử đầu tiên
+            cbxToHopGoc.setSelectedIndex(0);
+        } else {
+            // Chưa có tổ hợp nào trong hệ thống
+            cbxToHopGoc.addItem("(Chưa có tổ hợp)");
+            cbxToHopGoc.setEnabled(false);
         }
     }
 }

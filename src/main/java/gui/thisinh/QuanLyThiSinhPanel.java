@@ -149,7 +149,11 @@ public class QuanLyThiSinhPanel extends JPanel {
     // 3. BẢNG DỮ LIỆU
     // ======================================================
     private void buildTable() {
-        String[] columns = { "ID", "CCCD", "SBD", "Họ", "Tên", "Ngày Sinh", "Giới Tính", "Khu Vực", "Đối Tượng" };
+        String[] columns = {
+            "ID", "CCCD", "SBD", "Họ", "Tên",
+            "Ngày Sinh", "Giới Tính", "Nơi Sinh",
+            "SĐT", "Email", "Khu Vực", "Đối Tượng"
+        };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -165,20 +169,23 @@ public class QuanLyThiSinhPanel extends JPanel {
         tblCandidates = new CustomTable(tableModel);
         tblCandidates.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tblCandidates.setRowHeight(28);
+        // Bật AUTO_RESIZE_OFF để cột giữ đúng kích thước và scroll ngang xuất hiện
+        tblCandidates.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-        // Căn chỉnh cột
-        int[] widths = { 50, 120, 100, 160, 100, 100, 80, 80, 100 };
+        // Độ rộng 12 cột
+        int[] widths = { 50, 130, 100, 130, 90, 100, 85, 140, 110, 190, 80, 90 };
         for (int i = 0; i < widths.length; i++) {
             tblCandidates.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
-        // Căn giữa cột ID và Giới tính, Khu vực
-        for (int col : new int[] { 0, 5, 6, 7, 8 }) {
+        // Căn giữa cột ID, Ngày Sinh, Giới Tính, Khu Vực, Đối Tượng
+        for (int col : new int[] { 0, 5, 6, 10, 11 }) {
             tblCandidates.getColumnModel().getColumn(col).setCellRenderer(CustomTable.centerRenderer());
         }
 
         JScrollPane scrollPane = new JScrollPane(tblCandidates);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         JPanel pnlCenter = new JPanel(new BorderLayout());
         pnlCenter.setOpaque(false);
@@ -287,12 +294,14 @@ public class QuanLyThiSinhPanel extends JPanel {
                         "Vui lòng chọn thí sinh cần xóa!", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            String cccd = (String) tblCandidates.getValueAt(row, 1);
-            String ten = tblCandidates.getValueAt(row, 2) + " " + tblCandidates.getValueAt(row, 3);
+            String cccd  = (String) tblCandidates.getValueAt(row, 1);
+            String ho    = String.valueOf(tblCandidates.getValueAt(row, 3)); // col[3] = Họ
+            String ten   = String.valueOf(tblCandidates.getValueAt(row, 4)); // col[4] = Tên
+            String hoTen = (ho + " " + ten).trim();
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Bạn có chắc muốn xóa thí sinh?\n" +
                             "  CCCD : " + cccd + "\n" +
-                            "  Họ tên: " + ten.trim(),
+                            "  Họ tên: " + hoTen,
                     "Xác nhận xóa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
@@ -381,8 +390,11 @@ public class QuanLyThiSinhPanel extends JPanel {
                         ts.getTen(),
                         ts.getNgaySinh(),
                         ts.getGioiTinh(),
-                        ts.getKhuVuc() != null && !ts.getKhuVuc().isEmpty() ? ts.getKhuVuc() : "—",
-                        ts.getDoiTuong() != null && !ts.getDoiTuong().isEmpty() ? ts.getDoiTuong() : "—"
+                        ts.getNoiSinh()   != null && !ts.getNoiSinh().isEmpty()   ? ts.getNoiSinh()   : "—",
+                        ts.getDienThoai() != null && !ts.getDienThoai().isEmpty() ? ts.getDienThoai() : "—",
+                        ts.getEmail()     != null && !ts.getEmail().isEmpty()     ? ts.getEmail()     : "—",
+                        ts.getKhuVuc()    != null && !ts.getKhuVuc().isEmpty()    ? ts.getKhuVuc()    : "—",
+                        ts.getDoiTuong()  != null && !ts.getDoiTuong().isEmpty()  ? ts.getDoiTuong()  : "—"
                 });
             }
         }
