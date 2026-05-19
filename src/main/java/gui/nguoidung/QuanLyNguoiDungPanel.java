@@ -69,8 +69,8 @@ public class QuanLyNguoiDungPanel extends JPanel {
         pnlToolbar.setOpaque(false);
         pnlToolbar.setBorder(new EmptyBorder(10, 15, 8, 15));
 
-        // Search
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        // Search - txtSearch co giãn lấp khoảng trống
+        JPanel pnlSearch = new JPanel(new BorderLayout(10, 0));
         pnlSearch.setOpaque(false);
         JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
@@ -81,13 +81,18 @@ public class QuanLyNguoiDungPanel extends JPanel {
         btnSearch.setPreferredSize(new Dimension(90, 36));
         btnReset = new CustomButton("Xóa lọc", UIConstants.GRAY_COLOR);
         btnReset.setPreferredSize(new Dimension(110, 36));
-        pnlSearch.add(lblSearch);
-        pnlSearch.add(txtSearch);
-        pnlSearch.add(btnSearch);
-        pnlSearch.add(btnReset);
+
+        JPanel pnlSearchBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlSearchBtns.setOpaque(false);
+        pnlSearchBtns.add(btnSearch);
+        pnlSearchBtns.add(btnReset);
+
+        pnlSearch.add(lblSearch, BorderLayout.WEST);
+        pnlSearch.add(txtSearch, BorderLayout.CENTER);
+        pnlSearch.add(pnlSearchBtns, BorderLayout.EAST);
 
         // Actions
-        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlActions.setOpaque(false);
         btnAdd          = new CustomButton("+ Thêm",      UIConstants.SUCCESS_COLOR);
         btnEdit         = new CustomButton("Sửa",          UIConstants.PRIMARY_COLOR);
@@ -95,12 +100,17 @@ public class QuanLyNguoiDungPanel extends JPanel {
         btnToggleRole   = new CustomButton("Đổi quyền",    UIConstants.TEAL_COLOR);
         btnToggleActive = new CustomButton("Bật/Tắt",   UIConstants.PURPLE_COLOR);
         btnDelete       = new CustomButton("Xóa",          UIConstants.DANGER_COLOR);
+        btnAdd.setPreferredSize(new Dimension(95, 36));
+        btnEdit.setPreferredSize(new Dimension(75, 36));
+        btnChangePass.setPreferredSize(new Dimension(95, 36));
+        btnToggleRole.setPreferredSize(new Dimension(105, 36));
+        btnToggleActive.setPreferredSize(new Dimension(95, 36));
+        btnDelete.setPreferredSize(new Dimension(75, 36));
         for (CustomButton b : new CustomButton[]{btnAdd, btnEdit, btnChangePass, btnToggleRole, btnToggleActive, btnDelete}) {
-            b.setPreferredSize(new Dimension(130, 36));
             pnlActions.add(b);
         }
 
-        pnlToolbar.add(pnlSearch, BorderLayout.WEST);
+        pnlToolbar.add(pnlSearch, BorderLayout.CENTER);
         pnlToolbar.add(pnlActions, BorderLayout.EAST);
 
         JSeparator sep = new JSeparator();

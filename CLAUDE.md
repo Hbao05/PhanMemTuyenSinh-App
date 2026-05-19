@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 mvn clean compile         # Compile
 mvn clean package         # Build JAR
 ```
-Entry point: `MainApp.main()` — sets system L&F and launches `LoginFrame`. Run from IDE.
+Entry point: `MainApp.main()` — sets system L&F and launches `MainFrame`. Run from IDE. (The `LoginFrame` startup path is currently commented out for development convenience.)
 
 ### Database
 ```bash
@@ -27,9 +27,11 @@ Hibernate credentials (hibernate.cfg.xml): `root` / `root`. Docker also exposes 
 ### Utility Classes (run from IDE)
 - `AlterSchema.java` — migrate schema
 - `CheckDB.java` / `CheckSchema.java` — inspect DB state
-- `ClearDB.java` — wipe all records
+- `ClearDB.java` / `ClearData.java` — wipe all records
+- `CreateTables.java` / `DropConstraint.java` / `HardDelete.java` — DDL helpers
 - `SeedAdminUser.java` — create default admin account
-- `python scripts/inspect_data.py` — inspect Excel file structure
+- `InspectExcel.java` / `python scripts/inspect_data.py` — inspect Excel file structure
+- `TestCount.java` / `TestFetch.java` / `TestImport.java` — manual integration tests (no formal test suite; `src/test/` does not exist)
 
 ## Architecture
 
@@ -40,7 +42,7 @@ gui.*      →  bus.*      →  dao.*        →  entity.*   →  MySQL
 (Swing UI)   (Business)    (Hibernate)     (JPA POJOs)
 ```
 
-**`MainApp.java`** — true entry point; opens `LoginFrame` (3-attempt lockout with 30s delay, BCrypt auth). On success, loads `MainFrame`.
+**`MainApp.java`** — true entry point; currently opens `MainFrame` directly. The full flow (disabled in dev) is: `LoginFrame` → 3-attempt lockout with 30s delay, BCrypt auth → `MainFrame`.
 
 **`app/Session.java`** — static holder for the logged-in `NguoiDung`; `isAdmin()` drives sidebar menu visibility.
 
@@ -64,9 +66,9 @@ gui.*      →  bus.*      →  dao.*        →  entity.*   →  MySQL
 | `BangQuyDoi` | `xt_bangquydoi` | Score conversion tables |
 | `NguoiDung` | `xt_nguoidung` | User accounts; quyen = ADMIN \| USER |
 
-**`util/`** — `HibernateUtil.java` (singleton SessionFactory), `ExcelUtil.java` (POI batch reader, 1000 rows/batch), `PasswordUtil.java` (BCrypt wrap).
+**`util/`** — `HibernateUtil.java` (singleton SessionFactory), `ExcelUtil.java` (POI batch reader, 1000 rows/batch using `excel-streaming-reader` for large files), `PasswordUtil.java` (BCrypt wrap), `ProvinceUtil.java` (province/area data), `SubjectUtil.java` (subject name helpers).
 
-Excel import templates are in `src/main/resources/data_import/` (`thisinh_import.xlsx`, `nganh_import.xlsx`, `tohopmon_import.xlsx`, `nganhtohop_import.xlsx`).
+Excel import templates are in `src/main/resources/data_import/`: `thisinh_import.xlsx`, `nganh_import.xlsx`, `tohopmon_import.xlsx`, `nganhtohop_import.xlsx`, `nguyenvongxettuyen.xlsx`, `diemcongxettuyen.xlsx`, `xt_diemthixettuyen.xlsx`, `xt_bangquydoi.xlsx`.
 
 ## Admission Score Formula
 

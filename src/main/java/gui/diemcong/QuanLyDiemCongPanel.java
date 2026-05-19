@@ -74,7 +74,7 @@ public class QuanLyDiemCongPanel extends JPanel {
         pnlToolbar.setOpaque(false);
         pnlToolbar.setBorder(new EmptyBorder(10, 15, 8, 15));
 
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel pnlSearch = new JPanel(new BorderLayout(10, 0));
         pnlSearch.setOpaque(false);
         JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(UIConstants.FONT_BOLD);
@@ -85,12 +85,17 @@ public class QuanLyDiemCongPanel extends JPanel {
         btnReset  = new CustomButton("Xóa lọc", UIConstants.GRAY_COLOR);
         btnSearch.setPreferredSize(new Dimension(90, 36));
         btnReset.setPreferredSize(new Dimension(110, 36));
-        pnlSearch.add(lblSearch);
-        pnlSearch.add(txtSearch);
-        pnlSearch.add(btnSearch);
-        pnlSearch.add(btnReset);
 
-        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel pnlSearchBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlSearchBtns.setOpaque(false);
+        pnlSearchBtns.add(btnSearch);
+        pnlSearchBtns.add(btnReset);
+
+        pnlSearch.add(lblSearch, BorderLayout.WEST);
+        pnlSearch.add(txtSearch, BorderLayout.CENTER);
+        pnlSearch.add(pnlSearchBtns, BorderLayout.EAST);
+
+        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlActions.setOpaque(false);
         btnImport     = new CustomButton("Import",   UIConstants.TEAL_COLOR);
         btnAdd    = new CustomButton("+ Thêm", UIConstants.SUCCESS_COLOR);
@@ -101,7 +106,7 @@ public class QuanLyDiemCongPanel extends JPanel {
             pnlActions.add(b);
         }
 
-        pnlToolbar.add(pnlSearch,  BorderLayout.WEST);
+        pnlToolbar.add(pnlSearch,  BorderLayout.CENTER);
         pnlToolbar.add(pnlActions, BorderLayout.EAST);
 
         JSeparator sep = new JSeparator();

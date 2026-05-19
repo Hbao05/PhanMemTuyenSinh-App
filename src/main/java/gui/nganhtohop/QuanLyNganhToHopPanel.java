@@ -77,8 +77,8 @@ public class QuanLyNganhToHopPanel extends JPanel {
         pnlToolbar.setOpaque(false);
         pnlToolbar.setBorder(new EmptyBorder(10, 15, 8, 15));
 
-        // Search
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        // Search - txtSearch co giãn lấp khoảng trống
+        JPanel pnlSearch = new JPanel(new BorderLayout(10, 0));
         pnlSearch.setOpaque(false);
 
         JLabel lblSearch = new JLabel("Tìm kiếm:");
@@ -94,13 +94,17 @@ public class QuanLyNganhToHopPanel extends JPanel {
         btnReset = new CustomButton("Xóa lọc", new Color(120, 120, 120));
         btnReset.setPreferredSize(new Dimension(110, 36));
 
-        pnlSearch.add(lblSearch);
-        pnlSearch.add(txtSearch);
-        pnlSearch.add(btnSearch);
-        pnlSearch.add(btnReset);
+        JPanel pnlSearchBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlSearchBtns.setOpaque(false);
+        pnlSearchBtns.add(btnSearch);
+        pnlSearchBtns.add(btnReset);
+
+        pnlSearch.add(lblSearch, BorderLayout.WEST);
+        pnlSearch.add(txtSearch, BorderLayout.CENTER);
+        pnlSearch.add(pnlSearchBtns, BorderLayout.EAST);
 
         // Actions
-        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlActions.setOpaque(false);
 
         btnAdd    = new CustomButton("Thêm mới",  UIConstants.SUCCESS_COLOR);
@@ -113,7 +117,7 @@ public class QuanLyNganhToHopPanel extends JPanel {
             pnlActions.add(b);
         }
 
-        pnlToolbar.add(pnlSearch,  BorderLayout.WEST);
+        pnlToolbar.add(pnlSearch,  BorderLayout.CENTER);
         pnlToolbar.add(pnlActions, BorderLayout.EAST);
 
         JSeparator sep = new JSeparator();

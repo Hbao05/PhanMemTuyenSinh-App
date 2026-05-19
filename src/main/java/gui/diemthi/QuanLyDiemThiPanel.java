@@ -74,8 +74,8 @@ public class QuanLyDiemThiPanel extends JPanel {
         pnlToolbar.setOpaque(false);
         pnlToolbar.setBorder(new EmptyBorder(10, 15, 8, 15));
 
-        // Cụm tìm kiếm bên trái - Thu gọn kích thước vừa đủ
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        // Cụm tìm kiếm bên trái - txtSearch co giãn lấp khoảng trống
+        JPanel pnlSearch = new JPanel(new BorderLayout(10, 0));
         pnlSearch.setOpaque(false);
 
         JLabel lblFilter = new JLabel("Loại:");
@@ -95,13 +95,24 @@ public class QuanLyDiemThiPanel extends JPanel {
         btnSearch.setPreferredSize(new Dimension(75, 36));
         btnReset.setPreferredSize(new Dimension(90, 36));
 
-        pnlSearch.add(lblFilter); pnlSearch.add(cboFilter);
-        pnlSearch.add(Box.createHorizontalStrut(4));
-        pnlSearch.add(lblSearch); pnlSearch.add(txtSearch);
-        pnlSearch.add(btnSearch); pnlSearch.add(btnReset);
+        JPanel pnlSearchLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlSearchLeft.setOpaque(false);
+        pnlSearchLeft.add(lblFilter);
+        pnlSearchLeft.add(cboFilter);
+        pnlSearchLeft.add(Box.createHorizontalStrut(4));
+        pnlSearchLeft.add(lblSearch);
+
+        JPanel pnlSearchBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlSearchBtns.setOpaque(false);
+        pnlSearchBtns.add(btnSearch);
+        pnlSearchBtns.add(btnReset);
+
+        pnlSearch.add(pnlSearchLeft, BorderLayout.WEST);
+        pnlSearch.add(txtSearch, BorderLayout.CENTER);
+        pnlSearch.add(pnlSearchBtns, BorderLayout.EAST);
 
         // Cụm hành động bên phải - Đưa nút Thống Kê về đây để dàn đều UI
-        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlActions.setOpaque(false);
 
         btnThongKe = new CustomButton("Thống kê", new Color(124, 58, 237));
@@ -118,7 +129,7 @@ public class QuanLyDiemThiPanel extends JPanel {
         btnImport.setPreferredSize(new Dimension(100, 36));
         pnlActions.add(btnImport);
 
-        pnlToolbar.add(pnlSearch,  BorderLayout.WEST);
+        pnlToolbar.add(pnlSearch,  BorderLayout.CENTER);
         pnlToolbar.add(pnlActions, BorderLayout.EAST);
 
         JSeparator sep = new JSeparator();
